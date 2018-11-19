@@ -1,0 +1,228 @@
+---
+title: "Applying an ICAR reference prior"
+package: ref.ICAR
+output: rmarkdown::html_vignette
+geometry: margin=1in
+vignette: >
+  %\VignetteIndexEntry{Applying an ICAR reference prior}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+bibliography:
+- ../inst/REFERENCES.bib
+csl: journal-of-the-american-statistical-association.csl
+---
+
+---
+nocite: |
+  @keefe2018, @Keefe_2018, @Hierarchical_2014
+...
+
+```{r setup, include=FALSE,warning=F}
+knitr::opts_chunk$set(echo = TRUE)
+#knitr::opts_chunk$set(fig.width=8, fig.height=6)
+library(rcrossref)
+library(captioner)
+```
+
+# 1   Introduction
+
+The **ref.ICAR** package performs objective Bayesian analysis using a reference prior proposed by Keefe et al. [-@keefe2018].  This model provides an approach for modeling spatially correlated areal data, using an intrinsic conditional autoregressive (ICAR) component with a reference prior on a vector of spatial random effects.
+
+
+# 2   Functions
+**ref.ICAR** can be used to analyze areal data corresponding to a contiguous region, provided a shapefile or neighborhood matrix and data.  The functions implemented by **ref.ICAR** are summarized below.
+
+* `shape.H()` Takes a file path to a shapefile and forms the appropriate neighborhood matrix for analysis with the ICAR reference prior model.
+
+* `ref.MCMC()` Implements the posterior sampling algorithm proposed by Keefe et al. [-@keefe2018].  Generates MCMC chains for parameter and regional inferences.
+
+* `ref.summary()` Provides posterior inferences for the model parameters, $\tau_c$, $\boldsymbol{\beta}$, and $\sigma^2$.  Includes posterior medians, highest posterior density (HPD) intervals, and acceptance rates for each parameter.
+
+* `reg.summary()` Provides fitted posterior values and summaries for each subregion in the areal data set.  Includes posterior medians and HPD intervals by region.
+
+* `ref.plot()` Outputs trace plots for the model parameters, $\tau_c$, $\boldsymbol{\beta}$, and $\sigma^2$.
+
+* `ref.analysis()` Performs analysis by sequentially implementing each of the functions above.  This function produces plots and a list containing MCMC chains, parameter estimates, regional estimates, and sampling acceptance rates.
+
+
+# 3   Model
+The model implemented by **ref.ICAR** is summarized below.
+\begin{equation}
+\mathbf{Y}= X \boldsymbol{\boldsymbol{\beta}}+\boldsymbol{\theta}+\boldsymbol{\phi}
+\end{equation}
+
+where 
+
+* $\mathbf{Y}$ is an $n\times1$ vector for the response variable, where $n$ corresponds to the number of regions in the shapefile.  The current version of the package does not allow for missing data.
+
+* $X$ is a matrix of covariates.  This can include a vector $\textbf{1}_n$ for an intercept, and additional columns corresponding to quantitative predictors.
+
+* $\boldsymbol{\boldsymbol{\beta}}$ is the $p\times1$ vector of fixed effect regression coefficients, where $p$ corresponds to the number of columns in $X$.
+
+* $\boldsymbol{\theta}$ is an $n\times1$ vector of independent and normally distributed unstructured random effects defined with mean 0 and variance $\sigma^2$.
+
+* $\boldsymbol{\phi}$ is an $n\times1$ vector of spatial random effects that is assigned an intrinsic CAR prior with the sum-zero constraint $\sum_{i=1}^n \phi_i=0$ [@Keefe_2018].
+
+The model assumes a signal-to-noise ratio parameterization for the variance components of the random components of the model, so $\sigma^2$ and $\tau_c$ are used as below.
+$$\boldsymbol{\phi} \sim \bigg(\textbf{0},\frac{\sigma^2}{\tau_c}\Sigma_{\phi}\bigg)$$
+
+The parameter $\tau_c$ controls the strength of spatial dependence, and given the neighborhood structure, $\Sigma_{\phi}$ is a fixed matrix.  Specifically, $\Sigma_{\phi}$ is the Moore-Penrose inverse of $H$, where the neighborhood matrix $H$ is an $n\times n$ symmetric matrix constructed as follows.
+\begin{equation}
+(H)_{ij} = 
+\begin{cases} 
+h_i & \text{if } i=j \\
+-g_{ij}         & \text{if } i\in N_j \\
+0 &   \text{otherwise},
+\end{cases}
+\end{equation}
+
+where $g_{ij}=1$ if subregions $i$ and $j$ are neighbors, $g_{ij}=0$ if subregions i and j are not neighbors,and $h_i$ is the number of neighbors of subregion $i$.  Therefore, the neighborhood matrix $H$ is an $n\times n$ symmetric matrix where the diagonal elements correspond to the number of neighbors for each subregion in the data,
+and each off-diagonal element equals $-1$ if the corresponding subregions are neighbors.
+
+Provided a path to a shapefile, the `shape.H()` function in **ref.ICAR** constructs $H$ as specified above, and checks for symmetry and contiguous regions (i.e. no islands) prior to analysis.  The functions `shape.H()` and `ref.analysis()` requires a file path to a shapefile.  If a user wants to analyze areal data without a corresponding shapefile (e.g. neuroimaging), they will need to construct $H$ as above and use this $H$ in `ref.MCMC()`.  `ref.plot()`,`ref.summary()`, and `reg.summary()` can then be used with the MCMC chains obtained from `ref.MCMC()`.  Additionally, if a user performs analysis without `ref.analysis()`, the regions corresponding to data values in $X$ and $y$ must match the region order in $H$; otherwise inferences will be matched to incorrect regions.
+
+# 4   Example
+
+Consider an example of areal data over the contiguous United States.  Figure 1 represents the average SAT scores reported in 1999 for each of the contiguous United States and Washington D.C.  This example will explore these data and use the **ref.ICAR** package to fit a model to the response, Verbal SAT scores, considering spatial dependence and a single covariate, percent of eligible students that took the SAT in each state in 1999.  This data was analyzed in *Hierarchical Modeling and Analysis for Spatial Data* [@Hierarchical_2014]. The data are available online at
+https://www.counterpointstat.com/hierarchical-modeling-and-analysis-for-spatial-data.html.  We make it available in the **ref.ICAR** package with permission from the authors.  The shapefile is found from http://www.arcgis.com/home/item.html?id=f7f805eb65eb4ab787a0a3e1116ca7e5.
+
+These data and the accompanying shapefile are attached to the **ref.ICAR** package.  The files can be loaded into R as shown below.  The `readOGR()` function from package **rgdal** is used to read the shapefile.
+
+```{r echo = F, eval = T}
+fig_nums <- captioner(prefix = "Figure")
+sat_cap <- fig_nums(name = "sat", caption = "Observed Verbal SAT Scores")
+percent_cap <- fig_nums(name = "percent", caption = "Percent of eligible students taking the SAT")
+fit_cap <- fig_nums(name = "fits", caption = "Posterior Medians for Verbal SAT")
+```
+
+```{r echo = T, eval = T, warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=58)}
+
+library(rgdal)
+
+system.path <- system.file("extdata", "us.shape48.shp", package = "ref.ICAR", mustWork = TRUE)
+shp.layer <- gsub('.shp','',basename(system.path))
+shp.path <- dirname(system.path)
+
+us.shape48 <- readOGR(dsn = path.expand(shp.path), layer = shp.layer, verbose = FALSE)
+```
+The SAT data can be loaded into R from **ref.ICAR** using `read.table()`.
+
+```{r echo = T, eval = T, warning=F, message=F, tidy=TRUE, tidy.opts=list(width.cutoff=58)}
+
+library(utils)
+
+data.path <- system.file("extdata", "states-sats48.txt", package = "ref.ICAR", mustWork = TRUE)
+
+sats48 <- read.table(data.path, header = T)
+us.shape48$verbal <- sats48$VERBAL
+us.shape48$percent <- sats48$PERCENT
+```
+
+Now that the shapefile and data are loaded, the observed data can be plotted as a choropleth map (Figure 1).  This map illustrates the spatial dependence to be analyzed by the model.  The Midwestern states and Utah exhibit the highest average SAT scores, and overall, neighboring states have similar average scores.
+
+```{r echo = T, eval = T,fig.cap=sat_cap, warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=60),fig.align="center",fig.pos="h",fig.width=7,fig.height=5.5}
+
+library(RColorBrewer)
+library(sp)
+
+verbal.brk <- quantile(sats48$VERBAL,c(0,.2,.4,.6,0.8,1)) + c(-.1,0,0,0,0,.1)
+verbal.color<-brewer.pal(5,"Greys")
+spplot(us.shape48, "verbal", at = verbal.brk, col.regions = verbal.color,par.settings = list(panel.background=list(col="white")), main="Observed Verbal SAT Scores")
+```
+
+Similarly, the covariate, percent of eligible students taking the SAT, can be plotted over the contiguous United States.  These data exhibit a seemingly inverse relationship to the SAT scores; lower percentages of students take the SAT in the Midwest.
+
+```{r echo = T, eval = T,fig.cap=percent_cap, warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=60),fig.align="center",fig.pos="h",fig.width=7,fig.height=5.5}
+
+percent.brk <- quantile(sats48$PERCENT,c(0,.2,.4,.6,0.8,1)) + c(-.1,0,0,0,0,.1)
+percent.color <- brewer.pal(5, "Greys")
+spplot(us.shape48, "percent", at = percent.brk, col.regions = percent.color,par.settings = list(panel.background=list(col="white")),main="Percent Taking SAT")
+```
+
+Employing the functions in **ref.ICAR**, the `shape.H()` function first takes the path to the shape file (obtained above), and returns a list of two objects.  This list contains the neighborhood matrix, $H$ and a $\texttt{SpatialPolygonsDataFrame}$ object corresponding to the shapefile, to be used by the remaining functions.
+
+```{r echo = T, eval = T, warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=60)}
+
+library(ref.ICAR)
+
+shp.data <- shape.H(system.path)
+H <- shp.data$H
+
+class(shp.data$map)
+length(shp.data$map)
+```
+
+The response and covariates, $Y$ and $X$ must be defined before fitting the model.  The response, $Y$, is Verbal SAT scores.  $X$ has two columns corresponding to an intercept and the predictor, percent of eligible students taking the SAT in 1999.
+
+```{r echo = T, eval = T, warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=60)}
+
+Y <- sats48$VERBAL
+x <- sats48$PERCENT
+X <- cbind(1,x)
+```
+
+Then sampling can be performed using `ref.MCMC()`.  The default starting values are used below, with MCMC iterations and burn-in larger than the default.
+
+```{r echo = T, eval = T, warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=60)}
+set.seed(3456)
+
+ref.SAT <- ref.MCMC(y=Y,X=X,H=H,iters=15000,burnin=5000,verbose=FALSE)
+
+names(ref.SAT)
+```
+
+The object ref.SAT contains MCMC chains for each of the parameters in the model $\mathbf{Y}= X \boldsymbol{\boldsymbol{\beta}}+\boldsymbol{\theta}+\boldsymbol{\phi}$, using a signal-to-noise ratio parameterization.  From these, the function `ref.plot()` creates trace plots for each parameter to visually confirm convergence.
+
+```{r echo = T, eval = T, warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=60),fig.width=7,fig.height=5}
+par(mfrow=c(2,2))
+ref.plot(ref.SAT$MCMCchain,X,burnin=5000,num.reg=length(Y))
+```
+
+The remaining components for the analysis are the functions for parameter and regional inferences.  The function `ref.summary()` provides posterior medians and intervals for the model parameters $\boldsymbol{\beta}$, $\tau_c$, and $\sigma^2$.  The function `ref.summary()` provides medians and Highest Posterior Density intervals for the fitted $y$ values for each subregion in the data.
+
+```{r echo = T, eval = T, warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=60)}
+
+summary.params <- ref.summary(MCMCchain=ref.SAT$MCMCchain,tauc.MCMC=ref.SAT$tauc.MCMC,sigma2.MCMC=ref.SAT$sigma2.MCMC,beta.MCMC=ref.SAT$beta.MCMC,phi.MCMC=ref.SAT$phi.MCMC,accept.phi=ref.SAT$accept.phi,accept.sigma2=ref.SAT$accept.sigma2,accept.tauc=ref.SAT$accept.tauc,iters=15000,burnin=5000)
+
+names(summary.params)
+summary.params
+```
+
+The posterior medians for $\beta_0$ and $\beta_1$ are 575.496 and -1.145, respectively.  Additionally, the HPD interval for $\beta_1$ does not include $0$, which indicates that as the percent of eligible students taking the SAT increases, average Verbal SAT score tends to descrease.  The $\tau_c$ median is 0.08, with HPD interval between 0.0014 and 0.5237.
+
+```{r echo = T, eval = T,fig.cap=fit_cap, warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=60),fig.align="center",fig.pos="h",fig.width=7,fig.height=5.5}
+
+summary.region <- reg.summary(ref.SAT$MCMCchain,X,Y,burnin=5000)
+
+us.shape48$verbalfits <- summary.region$reg.medians
+spplot(us.shape48, "verbalfits", at = verbal.brk, col.regions = verbal.color,main="Posterior Medians for Verbal SAT",par.settings = list(panel.background=list(col="white")))
+```
+
+Finally, the function `ref.analysis()` in **ref.ICAR** performs the entire reference analysis, including:
+
+* Obtaining the neighborhood matrix, $H$
+
+* Running the MCMC chains
+
+* Producing parameter trace plots
+
+* Producing parameter summaries
+
+* Producing regional summaries
+
+`ref.analysis()` requires the following user inputs: $X$, $y$, a path to a shapefile, a vector of region names corresponding to the values in $X$, and a vector of region names corresponding to the values in response $y$.  The region names in each of $X$ and $y$ must match and are required because `ref.analysis()` reorders the data according to the region order in the shapefile.  This ensures that the data values match to the correct entries in the neighborhood matrix $H$; otherwise analysis might map predicted values to incorrect regions.  If the provided shapefile does not have a specified NAME column, the user will be asked to also provide a vector of names corresponding to the shapefile.  This vector is called $\texttt{shp.reg.names}$ in the documentation and function arguments; the default value is NULL.
+
+```{r echo = T, eval = T, warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=60),fig.width=7,fig.height=5}
+
+### The SAT scores and percent of students are already arranged by state alphabetically
+x.reg.names <- us.shape48$NAME
+y.reg.names <- us.shape48$NAME
+
+set.seed(3456)
+par(mfrow=c(2,2))
+sat.analysis <- ref.analysis(system.path,X,Y,x.reg.names,y.reg.names,shp.reg.names = NULL,iters=15000,burnin=5000,verbose = FALSE,tauc.start=.1,beta.start=-1,sigma2.start=.1,step.tauc=0.5,step.sigma2=0.5)
+
+names(sat.analysis)
+```
+
+# References
