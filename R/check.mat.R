@@ -22,9 +22,9 @@
 # \donttest{check.mat(H)}
 
 check.mat <- function(H) {
-    if (isSymmetric(H) == FALSE) {stop("H must be a symmetric matrix")}
-    if (all(diag(H)>0) == FALSE) {stop("The diagonal elements of H must be positive")}
-    if (all(diag(H) == floor(diag(H))) == FALSE) {stop("The diagonal elements of H must be integers")}
-    if (mean(diag(H) == -apply(H-diag(diag(H)),1,sum)) != 1 | mean(diag(H) == -apply(H-diag(diag(H)),2,sum)) != 1) {stop("The diagonal elements of H should equal the number of neighbors for each region")}
-    if (sum(eigen(H)$values < 1e-5) > 1) {stop("The specified region must be contiguous for this analysis")}
+  if (isSymmetric(H) == FALSE) {stop("H must be a symmetric matrix")}
+  if (all(diag(H)>0) == FALSE) {stop("The diagonal elements of H must be positive")}
+  if (all(diag(H) == floor(diag(H))) == FALSE) {stop("The diagonal elements of H must be integers")}
+  if (mean(diag(H) == -apply(H-diag(diag(H)),1,sum)) != 1 | mean(diag(H) == -apply(H-diag(diag(H)),2,sum)) != 1) {stop("The diagonal elements of H should equal the number of neighbors for each region")}
+  if (sum(eigen(H)$values < 1e-5) > 1) {stop("The specified region must be contiguous for this analysis")}
 }

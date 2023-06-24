@@ -24,28 +24,28 @@
 # @examples
 # ## Refer to the vignette attached to the package.
 ref.input <- function(H,X,y,lambda=0) {
-    if (is.matrix(X)==FALSE & is.vector(X)==TRUE) {X <- as.matrix(X, ncol=1)}
+  if (is.matrix(X)==FALSE & is.vector(X)==TRUE) {X <- as.matrix(X, ncol=1)}
 
-    check.mat(H)
+  check.mat(H)
 
-    num.reg <- length(y)
-    row.names(H) <- NULL
-    Q <- eigen(H,symmetric=TRUE)$vectors
-    Qmat <- Q[,1:(num.reg-1)]
-    eigH <- eigen(H,symmetric=TRUE)$values
-    phimat <- diag(1/sqrt(lambda + eigH[1:(num.reg-1)]))
-    D <- diag(eigH)
-    Sig_phi <- matrix(0,num.reg,num.reg) #initialize
-    for(i in 1:(num.reg-1)){
-        total <- (1/(lambda + eigH[i]))*Q[,i]%*%t(Q[,i])
-        Sig_phi <- Sig_phi + total
-    }
-    s1 <- diag(num.reg) - X%*%solve(t(X)%*%X)%*%t(X)
-    Q.star <- eigen(s1)$vectors[,1:(num.reg-ncol(X))]
-    M <- t(Q.star)%*%Sig_phi%*%Q.star
-    U <- eigen(M)$vectors
-    L <- Q.star%*%U
-    xi <- eigen(t(Q.star)%*%Sig_phi%*%Q.star)$values
+  num.reg <- length(y)
+  row.names(H) <- NULL
+  Q <- eigen(H,symmetric=TRUE)$vectors
+  Qmat <- Q[,1:(num.reg-1)]
+  eigH <- eigen(H,symmetric=TRUE)$values
+  phimat <- diag(1/sqrt(lambda + eigH[1:(num.reg-1)]))
+  D <- diag(eigH)
+  Sig_phi <- matrix(0,num.reg,num.reg) #initialize
+  for(i in 1:(num.reg-1)){
+    total <- (1/(lambda + eigH[i]))*Q[,i]%*%t(Q[,i])
+    Sig_phi <- Sig_phi + total
+  }
+  s1 <- diag(num.reg) - X%*%solve(t(X)%*%X)%*%t(X)
+  Q.star <- eigen(s1)$vectors[,1:(num.reg-ncol(X))]
+  M <- t(Q.star)%*%Sig_phi%*%Q.star
+  U <- eigen(M)$vectors
+  L <- Q.star%*%U
+  xi <- eigen(t(Q.star)%*%Sig_phi%*%Q.star)$values
 
-    return(list(D=D,Q=Q,xi=xi,Qmat=Qmat,phimat=phimat,Sig_phi=Sig_phi,X=X))
+  return(list(D=D,Q=Q,xi=xi,Qmat=Qmat,phimat=phimat,Sig_phi=Sig_phi,X=X))
 }

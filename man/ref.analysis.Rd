@@ -4,10 +4,22 @@
 \alias{ref.analysis}
 \title{MCMC Analysis and Summaries for Reference Prior on an Intrinsic Autoregressive Model for Areal Data}
 \usage{
-ref.analysis(shape.file, X, y, x.reg.names, y.reg.names,
-  shp.reg.names = NULL, iters = 10000, burnin = 5000,
-  verbose = TRUE, tauc.start = 1, beta.start = 1, sigma2.start = 1,
-  step.tauc = 0.5, step.sigma2 = 0.5)
+ref.analysis(
+  shape.file,
+  X,
+  y,
+  x.reg.names,
+  y.reg.names,
+  shp.reg.names = NULL,
+  iters = 10000,
+  burnin = 5000,
+  verbose = TRUE,
+  tauc.start = 1,
+  beta.start = 1,
+  sigma2.start = 1,
+  step.tauc = 0.5,
+  step.sigma2 = 0.5
+)
 }
 \arguments{
 \item{shape.file}{A shapefile corresponding to the regions for analysis.}

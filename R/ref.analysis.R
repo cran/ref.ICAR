@@ -10,7 +10,7 @@
 #' @author Erica M. Porter, Matthew J. Keefe, Christopher T. Franck, and Marco A.R. Ferreira
 #' @importFrom MCMCglmm posterior.mode
 #' @importFrom coda HPDinterval mcmc
-#' @importFrom rgdal readOGR
+#' @importFrom sf st_read
 #' @importFrom spdep poly2nb
 #' @importFrom mvtnorm rmvnorm
 #' @param shape.file A shapefile corresponding to the regions for analysis.
@@ -51,75 +51,75 @@
 ref.analysis <- function(shape.file,X,y,x.reg.names,y.reg.names,shp.reg.names=NULL,iters=10000,
                          burnin=5000,verbose=TRUE,tauc.start=1,beta.start=1,sigma2.start=1,step.tauc=0.5,step.sigma2=0.5) {
 
-    ## Check for missing data
-    if(mean(is.na(y))!=0) {stop("The current version of the package does not support missing data.")}
-    num.reg <- nrow(as.matrix(y))
+  ## Check for missing data
+  if(mean(is.na(y))!=0) {stop("The current version of the package does not support missing data.")}
+  num.reg <- nrow(as.matrix(y))
 
-    ## Get neighborhood matrix and SpatialPolygonsDataFrame (region names/order)
-    dat <- shape.H(shape.file)
-    H <- dat$H
-    map <- dat$map
+  ## Get neighborhood matrix and SpatialPolygonsDataFrame (region names/order)
+  dat <- shape.H(shape.file)
+  H <- dat$H
+  map <- dat$map
 
-    ## Attach name columns to data
-    x.data <- data.frame(as.vector(x.reg.names),X)
-    y.data <- data.frame(as.vector(y.reg.names),y)
-    colnames(x.data)[1] <- c("NAME")
-    colnames(y.data)[1] <- c("NAME")
+  ## Attach name columns to data
+  x.data <- data.frame(as.vector(x.reg.names),X)
+  y.data <- data.frame(as.vector(y.reg.names),y)
+  colnames(x.data)[1] <- c("NAME")
+  colnames(y.data)[1] <- c("NAME")
 
-    ## Extract the column of region names from the shapefile
-    ## If no NAME column in the shapefile, the user will need to input a vector for shp.reg.names
-    if(is.null(shp.reg.names)==FALSE) {
-        shape.names <- shp.reg.names
-    } else if ("NAME" %in% colnames(map@data)){
-        shape.names <- map$NAME} else {
-        warning("Please enter a vector of names corresponding to your shapefile")}
+  ## Extract the column of region names from the shapefile
+  ## If no NAME column in the shapefile, the user will need to input a vector for shp.reg.names
+  if(is.null(shp.reg.names)==FALSE) {
+    shape.names <- shp.reg.names
+  } else if ("NAME" %in% colnames(map)){
+    shape.names <- map$NAME} else {
+      warning("Please enter a vector of names corresponding to your shapefile")}
 
-    ## Re-order the data to be in the same region order as the shapefile
-    x.data <- x.data[order(factor(x.data$NAME,levels=shape.names)),]
-    y.data <- y.data[order(factor(y.data$NAME,levels=shape.names)),]
+  ## Re-order the data to be in the same region order as the shapefile
+  x.data <- x.data[order(factor(x.data$NAME,levels=shape.names)),]
+  y.data <- y.data[order(factor(y.data$NAME,levels=shape.names)),]
 
-    ## Remove region name columns for sampling
-    Y <- as.vector(y.data[,-1])
-    X <- as.matrix(x.data[,-1])
+  ## Remove region name columns for sampling
+  Y <- as.vector(y.data[,-1])
+  X <- as.matrix(x.data[,-1])
 
-    ## Perform sampling using ICAR reference prior (Keefe et al., 2018)
-    MCMC <- ref.MCMC(y=Y,X=X,H=H,iters,burnin,verbose,
-                     tauc.start,beta.start,sigma2.start,step.tauc,
-                     step.sigma2)
+  ## Perform sampling using ICAR reference prior (Keefe et al., 2018)
+  MCMC <- ref.MCMC(y=Y,X=X,H=H,iters,burnin,verbose,
+                   tauc.start,beta.start,sigma2.start,step.tauc,
+                   step.sigma2)
 
-    ## Parameter summaries
-    ref.params <- ref.summary(MCMCchain=MCMC$MCMCchain,tauc.MCMC=MCMC$tauc.MCMC,
-                              sigma2.MCMC=MCMC$sigma2.MCMC,beta.MCMC=MCMC$beta.MCMC,phi.MCMC=MCMC$phi.MCMC,
-                              accept.phi=MCMC$accept.phi,accept.sigma2=MCMC$accept.sigma2,
-                              accept.tauc=MCMC$accept.tauc,iters,burnin)
+  ## Parameter summaries
+  ref.params <- ref.summary(MCMCchain=MCMC$MCMCchain,tauc.MCMC=MCMC$tauc.MCMC,
+                            sigma2.MCMC=MCMC$sigma2.MCMC,beta.MCMC=MCMC$beta.MCMC,phi.MCMC=MCMC$phi.MCMC,
+                            accept.phi=MCMC$accept.phi,accept.sigma2=MCMC$accept.sigma2,
+                            accept.tauc=MCMC$accept.tauc,iters,burnin)
 
-    ## Extract parameter summaries to avoid list returns for user
-    beta.median <- ref.params$beta.median
-    beta.hpd <- ref.params$beta.hpd
+  ## Extract parameter summaries to avoid list returns for user
+  beta.median <- ref.params$beta.median
+  beta.hpd <- ref.params$beta.hpd
 
-    tauc.median <- ref.params$tauc.median
-    tauc.hpd <- ref.params$tauc.hpd
+  tauc.median <- ref.params$tauc.median
+  tauc.hpd <- ref.params$tauc.hpd
 
-    sigma2.median <- ref.params$sigma2.median
-    sigma2.hpd <- ref.params$sigma2.hpd
+  sigma2.median <- ref.params$sigma2.median
+  sigma2.hpd <- ref.params$sigma2.hpd
 
-    sigma2.accept <- ref.params$sigma2.accept
-    tauc.accept <- ref.params$tauc.accept
+  sigma2.accept <- ref.params$sigma2.accept
+  tauc.accept <- ref.params$tauc.accept
 
-    ## Parameter trace plots
-    ref.plot(MCMC$MCMCchain,X,burnin,num.reg)
+  ## Parameter trace plots
+  ref.plot(MCMC$MCMCchain,X,burnin,num.reg)
 
-    ## Regional medians and intervals
-    regions <- reg.summary(MCMC$MCMCchain,X,Y,burnin)
+  ## Regional medians and intervals
+  regions <- reg.summary(MCMC$MCMCchain,X,Y,burnin)
 
-    fit.dist <- regions$fit.dist
-    reg.medians <- regions$reg.medians
-    reg.hpd <- regions$reg.hpd
+  fit.dist <- regions$fit.dist
+  reg.medians <- regions$reg.medians
+  reg.hpd <- regions$reg.hpd
 
-    return(list(H=H,MCMC=MCMC$MCMCchain,beta.median=beta.median,
-                beta.hpd=beta.hpd,tauc.median=tauc.median,tauc.hpd=tauc.hpd,
-                sigma2.median=sigma2.median,sigma2.hpd=sigma2.hpd,
-                tauc.accept=tauc.accept,sigma2.accept=sigma2.accept,
-                fit.dist=fit.dist,reg.medians=reg.medians,reg.hpd=reg.hpd))
+  return(list(H=H,MCMC=MCMC$MCMCchain,beta.median=beta.median,
+              beta.hpd=beta.hpd,tauc.median=tauc.median,tauc.hpd=tauc.hpd,
+              sigma2.median=sigma2.median,sigma2.hpd=sigma2.hpd,
+              tauc.accept=tauc.accept,sigma2.accept=sigma2.accept,
+              fit.dist=fit.dist,reg.medians=reg.medians,reg.hpd=reg.hpd))
 }
 

@@ -4,8 +4,18 @@
 \alias{ref.summary}
 \title{Parameter Summaries for MCMC Analysis}
 \usage{
-ref.summary(MCMCchain, tauc.MCMC, sigma2.MCMC, beta.MCMC, phi.MCMC,
-  accept.phi, accept.sigma2, accept.tauc, iters = 10000, burnin = 5000)
+ref.summary(
+  MCMCchain,
+  tauc.MCMC,
+  sigma2.MCMC,
+  beta.MCMC,
+  phi.MCMC,
+  accept.phi,
+  accept.sigma2,
+  accept.tauc,
+  iters = 10000,
+  burnin = 5000
+)
 }
 \arguments{
 \item{MCMCchain}{Matrix of MCMC chains for the ICAR model parameters.}

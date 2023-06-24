@@ -1,13 +1,16 @@
 #' MCMC for Reference Prior on an Intrinsic Conditional Autoregressive Random Effects Model for Areal Data
 #'
-#' @description Implements the Metropolis-within-Gibbs sampling algorithm proposed by Keefe et al. (2018),
+#' @description Implements the Metropolis-within-Gibbs sampling algorithm proposed by Ferreira et al. (2021),
 #' to perform posterior inference for the intrinsic conditional autoregressive model with spatial
-#' random effects.
+#' random effects.  This algorithm uses the spectral domain for the hierarchical model to create the
+#' Spectral Gibbs Sampler (SGS), which provides notable speedups to the MCMC algorithm proposed by Keefe et al (2019).
 #'
 #' @references
 #' \insertRef{keefe2018}{ref.ICAR}
 #'
 #' \insertRef{Keefe_2018}{ref.ICAR}
+#'
+#' \insertRef{Ferreira_2021}{ref.ICAR}
 #'
 #' @author Erica M. Porter, Matthew J. Keefe, Christopher T. Franck, and Marco A.R. Ferreira
 #'
@@ -93,113 +96,120 @@ ref.MCMC <- function(y,X,H,iters=10000,burnin=5000,verbose=TRUE,
                      tauc.start=1,beta.start=1,sigma2.start=1,step.tauc=0.5,
                      step.sigma2=0.5){
 
-    if (is.matrix(X)==FALSE & is.vector(X)==TRUE) {X <- as.matrix(X, ncol=1)}
+  if (is.matrix(X)==FALSE & is.vector(X)==TRUE) {X <- as.matrix(X, ncol=1)}
 
-    num.reg<-length(y)
+  sample.size<-length(y)
 
-    #Eigenvalue decomposition for sampling
-    if (is.matrix(X)==FALSE & is.vector(X)==TRUE) {X <- as.matrix(X, ncol=1)}
+  #Eigenvalue decomposition for sampling
+  if (is.matrix(X)==FALSE & is.vector(X)==TRUE) {X <- as.matrix(X, ncol=1)}
 
-    check.mat(H)
-    row.names(H) <- NULL
-    Q <- eigen(H,symmetric=TRUE)$vectors
-    Qmat <- Q[,1:(num.reg-1)]
-    eigH <- eigen(H,symmetric=TRUE)$values
-    phimat <- diag(1/sqrt(eigH[1:(num.reg-1)]))
-    D <- diag(eigH)
-    Sig_phi <- matrix(0,num.reg,num.reg) #initialize
-    for(i in 1:(num.reg-1)){
-        total <- (1/(eigH[i]))*Q[,i]%*%t(Q[,i])
-        Sig_phi <- Sig_phi + total
+  #    check.mat(H)
+  row.names(H) <- NULL
+  H.spectral <- eigen(H,symmetric=TRUE)
+  Q <- H.spectral$vectors
+  Qmat <- Q[,1:(sample.size-1)]
+  eigH <- H.spectral$values
+  Sig_phi <- matrix(0,sample.size,sample.size) #initialize
+  for(i in 1:(sample.size-1)){
+    total <- (1/(eigH[i]))*Q[,i]%*%t(Q[,i])
+    Sig_phi <- Sig_phi + total
+  }
+  s1 <- diag(sample.size) - X%*%solve(t(X)%*%X)%*%t(X)
+  Q.star <- eigen(s1)$vectors[,1:(sample.size-ncol(X))]
+  M <- t(Q.star)%*%Sig_phi%*%Q.star
+  U <- eigen(M)$vectors
+  L <- Q.star%*%U
+  xi <- eigen(t(Q.star)%*%Sig_phi%*%Q.star)$values
+
+
+  # Spectral transformation
+  y.sp <- t(Q) %*% y
+  X.sp <- t(Q) %*% X
+
+  #Initialize Metropolis Algorithm
+  tauc.MCMC<-matrix(0,nrow=iters,ncol=1)
+  sigma2.MCMC<-matrix(0,nrow=iters,ncol=1)
+  beta.MCMC<-matrix(0,nrow=iters,ncol=ncol(X))
+  phi.MCMC<-matrix(0,nrow=iters,ncol=sample.size)
+  tauc.MCMC[1,]<-tauc.start
+  sigma2.MCMC[1,]<-sigma2.start
+  phi.MCMC[1,]<-scale((1:sample.size)/100,center=TRUE,scale=FALSE)
+  beta.MCMC[1,]<-beta.start
+
+  #initialize acceptance rates
+  accept.phi<-1
+  accept.tauc<-1
+  accept.sigma2<-1
+  accept.beta<-1
+
+  for(i in 2:iters){
+
+    curr.sigma2<-sigma2.MCMC[i-1,]
+    curr.tauc<-tauc.MCMC[i-1,]
+    curr.phi<-phi.MCMC[i-1,]
+    curr.beta<-beta.MCMC[i-1,]
+
+    #Metropolis step for sigma2 and tauc jointly
+    logprop.sigma2<-rnorm(1,mean=log(curr.sigma2),sd=step.sigma2) #Propose log(sigma2) using normal distribution
+    prop.sigma2<-exp(logprop.sigma2)
+    logprop.tauc<-rnorm(1,mean=log(curr.tauc),sd=step.tauc) #Propose log(tauc) using normal distribution
+    prop.tauc<-exp(logprop.tauc)
+
+    aux <- y.sp - X.sp%*%curr.beta
+
+    N0<-(-1/2)*(sample.size*log(prop.sigma2) + sum(log((1+(1/(prop.tauc*(eigH[1:(sample.size-1)]))))))) -
+      (1/(2*prop.sigma2))*(t(aux * c((1+(1/(prop.tauc*eigH[1:(sample.size-1)])))^(-1),1))%*% aux) -
+      log(prop.sigma2) + ((0.5)*log(((sum((xi/(prop.tauc+xi))^2)) - ((1/(sample.size - ncol(X)))*(sum((xi/(prop.tauc+xi))))^2)))) + log(prop.tauc) +log(prop.sigma2) - log(prop.tauc)
+
+    D0<-(-1/2)*(sample.size*log(curr.sigma2) + sum(log((1+(1/(curr.tauc*(eigH[1:(sample.size-1)]))))))) -
+      (1/(2*curr.sigma2))*(t(aux *c((1+(1/(curr.tauc*eigH[1:(sample.size-1)])))^(-1),1))%*% aux) -
+      log(curr.sigma2) + ((0.5)*log(((sum((xi/(curr.tauc+xi))^2)) - ((1/(sample.size - ncol(X)))*(sum((xi/(curr.tauc+xi))))^2)))) + log(curr.tauc) + log(curr.sigma2) - log(curr.tauc)
+
+    if(log(runif(1,0,1))<(N0-D0)){
+      sigma2.MCMC[i,]<-prop.sigma2
+      accept.sigma2<-accept.sigma2 + 1
+      tauc.MCMC[i,]<-prop.tauc
+      accept.tauc<-accept.tauc + 1
     }
-    s1 <- diag(num.reg) - X%*%solve(t(X)%*%X)%*%t(X)
-    Q.star <- eigen(s1)$vectors[,1:(num.reg-ncol(X))]
-    M <- t(Q.star)%*%Sig_phi%*%Q.star
-    U <- eigen(M)$vectors
-    L <- Q.star%*%U
-    xi <- eigen(t(Q.star)%*%Sig_phi%*%Q.star)$values
-
-    #Initialize Metropolis Algorithm
-    tauc.MCMC<-matrix(0,nrow=iters,ncol=1)
-    sigma2.MCMC<-matrix(0,nrow=iters,ncol=1)
-    beta.MCMC<-matrix(0,nrow=iters,ncol=ncol(X))
-    phi.MCMC<-matrix(0,nrow=iters,ncol=num.reg)
-    tauc.MCMC[1,]<-tauc.start
-    sigma2.MCMC[1,]<-sigma2.start
-    phi.MCMC[1,]<-scale((1:num.reg)/100,center=TRUE,scale=FALSE)
-    beta.MCMC[1,]<-beta.start
-
-    #initialize acceptance rates
-    accept.phi<-1
-    accept.tauc<-1
-    accept.sigma2<-1
-    accept.beta<-1
-
-    for(i in 2:iters){
-
-        curr.sigma2<-sigma2.MCMC[i-1,]
-        curr.tauc<-tauc.MCMC[i-1,]
-        curr.phi<-phi.MCMC[i-1,]
-        curr.beta<-beta.MCMC[i-1,]
-
-        #Metropolis step for sigma2 and tauc jointly
-        logprop.sigma2<-rnorm(1,mean=log(curr.sigma2),sd=step.sigma2) #Propose log(sigma2) using normal distribution
-        prop.sigma2<-exp(logprop.sigma2)
-        logprop.tauc<-rnorm(1,mean=log(curr.tauc),sd=step.tauc) #Propose log(tauc) using normal distribution
-        prop.tauc<-exp(logprop.tauc)
-
-        N0<-(-1/2)*(num.reg*log(prop.sigma2) + sum(log((1+(1/(prop.tauc*(diag(D)[1:(num.reg-1)]))))))) -
-            ((1/(2*prop.sigma2))*t(y-X%*%curr.beta)%*%(Q%*%diag(c((1+(1/(prop.tauc*(diag(D)[1:(num.reg-1)]))))^(-1),1))%*%t(Q))%*%(y-X%*%curr.beta)) -
-            log(prop.sigma2) + ((0.5)*log(((sum((xi/(prop.tauc+xi))^2)) - ((1/(num.reg - ncol(X)))*(sum((xi/(prop.tauc+xi))))^2)))) + log(prop.tauc) +log(prop.sigma2) - log(prop.tauc)
-        D0<-(-1/2)*(num.reg*log(curr.sigma2) + sum(log((1+(1/(curr.tauc*(diag(D)[1:(num.reg-1)]))))))) -
-            ((1/(2*curr.sigma2))*t(y-X%*%curr.beta)%*%(Q%*%diag(c((1+(1/(curr.tauc*(diag(D)[1:(num.reg-1)]))))^(-1),1))%*%t(Q))%*%(y-X%*%curr.beta)) -
-            log(curr.sigma2) + ((0.5)*log(((sum((xi/(curr.tauc+xi))^2)) - ((1/(num.reg - ncol(X)))*(sum((xi/(curr.tauc+xi))))^2)))) + log(curr.tauc) + log(curr.sigma2) - log(curr.tauc)
-
-        if(log(runif(1,0,1))<(N0-D0)){
-            sigma2.MCMC[i,]<-prop.sigma2
-            accept.sigma2<-accept.sigma2 + 1
-            tauc.MCMC[i,]<-prop.tauc
-            accept.tauc<-accept.tauc + 1
-        }
-        else{
-            sigma2.MCMC[i,]<-curr.sigma2
-            tauc.MCMC[i,]<-curr.tauc
-        }
-        curr.sigma2<-sigma2.MCMC[i,]
-        curr.tauc<-tauc.MCMC[i,]
-
-        #Gibbs step for betas
-        Ainv<-(Q%*%diag(c((1+(1/(curr.tauc*(diag(D)[1:(num.reg-1)]))))^(-1),1))%*%t(Q))
-        mu<-solve(t(X)%*%Ainv%*%X)%*%t(X)%*%Ainv%*%y
-        V<-curr.sigma2*solve(t(X)%*%Ainv%*%X)
-        beta.MCMC[i,]<-t(rmvnorm(1,mean=mu,sigma=V))
-        curr.beta<-beta.MCMC[i,]
-        accept.beta<-accept.beta + 1
-
-        #Sample Phis from full conditional
-        mu1<-X%*%curr.beta
-        mu2<-rep(0,num.reg)
-        Sig_11<-curr.sigma2*(diag(num.reg) + ((1/curr.tauc)*Sig_phi))
-        Sig_12<-(curr.sigma2/curr.tauc)*Sig_phi
-        Sig_21<-Sig_12
-        Sig_22<-Sig_12
-        phi.fc.mean<-mu2 + Sig_21%*%M.P.Inverse(Sig_11)%*%(y - mu1)
-        phi.fc.var <- Sig_22 - Sig_21%*%M.P.Inverse(Sig_11)%*%Sig_12
-        #make variance matrix symmetric to account for machine precision
-        phi.fc.var.sym <- (phi.fc.var + t(phi.fc.var))/2
-
-        prop.phi<-t(rmvnorm(1,mean=phi.fc.mean,sigma=phi.fc.var.sym,method="svd"))
-
-        phi.MCMC[i,]<-prop.phi
-        accept.phi<-accept.phi+1
-
-        if(verbose==TRUE) {
-        if((100*(i/iters))%%5==0){print(paste(100*(i/iters),'% complete',' at ',date(),sep=''))}
-        }
+    else{
+      sigma2.MCMC[i,]<-curr.sigma2
+      tauc.MCMC[i,]<-curr.tauc
     }
+    curr.sigma2<-sigma2.MCMC[i,]
+    curr.tauc<-tauc.MCMC[i,]
 
-    MCMCchain <- cbind(tauc.MCMC,sigma2.MCMC,beta.MCMC,phi.MCMC)
+    #Gibbs step for betas
+    Ainv <- matrix(c((1+(1/(curr.tauc*(eigH[1:(sample.size-1)]))))^(-1),1), nrow=sample.size, ncol=ncol(X))
+    aux0 <- t(X.sp*Ainv)
+    aux <- solve(aux0 %*% X.sp)
+    mu <- aux %*% aux0 %*% y.sp
+    V<-curr.sigma2 * aux
+    beta.MCMC[i,]<-t(rmvnorm(1,mean=mu,sigma=V))
+    curr.beta<-beta.MCMC[i,]
+    accept.beta<-accept.beta + 1
 
-    return(list(MCMCchain=MCMCchain,tauc.MCMC=tauc.MCMC,sigma2.MCMC=sigma2.MCMC,beta.MCMC=beta.MCMC,
-                phi.MCMC=phi.MCMC,accept.phi=accept.phi,accept.sigma2=accept.sigma2,accept.tauc=accept.tauc))
+    # Simulate spectral random effects
+    #        curr.xi <- c(rnorm(n = (sample.size-1),
+    #                           mean = (y.sp[1:(sample.size-1)] - X.sp[1:(sample.size-1),] %*%
+    #                                       curr.beta)/(1+curr.tauc*eigH[1:(sample.size-1)]),
+    #                            sd = sqrt(1/(1+curr.tauc*eigH[1:(sample.size-1)]))
+    #                           )
+    #                      , 0)
+    eigH[sample.size] = 0.0
+    curr.xi <- rnorm(n = sample.size,
+                     mean = (y.sp - X.sp %*% curr.beta)/(1+curr.tauc*eigH),
+                     sd = sqrt(1/(1+curr.tauc*eigH)))
+
+    # Simulate spatial random effects
+    phi.MCMC[i,] <- Q %*% curr.xi
+
+    if(verbose==TRUE) {
+      if((100*(i/iters))%%5==0){print(paste(100*(i/iters),'% complete',' at ',date(),sep=''))}
+    }
+  }
+
+  MCMCchain <- cbind(tauc.MCMC,sigma2.MCMC,beta.MCMC,phi.MCMC)
+
+  return(list(MCMCchain=MCMCchain,tauc.MCMC=tauc.MCMC,sigma2.MCMC=sigma2.MCMC,beta.MCMC=beta.MCMC,
+              phi.MCMC=phi.MCMC,accept.phi=accept.phi,accept.sigma2=accept.sigma2,accept.tauc=accept.tauc))
 }

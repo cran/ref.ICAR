@@ -34,19 +34,19 @@
 #' ## Refer to the vignette attached to the package.
 ref.summary <- function(MCMCchain,tauc.MCMC,sigma2.MCMC,beta.MCMC,phi.MCMC,accept.phi,accept.sigma2,accept.tauc,iters=10000,burnin=5000) {
 
-    beta.median <- apply(cbind(beta.MCMC[(burnin+1):iters,]),2,median)
-    beta.obj <- mcmc(beta.MCMC,start=(burnin+1),end=iters)
-    beta.hpd <- HPDinterval(beta.obj,prob=0.95)[,]
-    tauc.median <- median(tauc.MCMC[(burnin+1):iters])
-    tauc.obj <- mcmc(tauc.MCMC,start=(burnin+1),end=iters)
-    tauc.hpd <- HPDinterval(tauc.obj,prob=0.95)[,]
-    tauc.accept <- accept.tauc/iters
-    sigma2.median <- median(sigma2.MCMC[(burnin+1):iters])
-    sigma2.obj <- mcmc(sigma2.MCMC,start=(burnin+1),end=iters)
-    sigma2.hpd <- HPDinterval(sigma2.obj,prob=0.95)[,]
-    sigma2.accept <- accept.sigma2/iters
+  beta.median <- apply(cbind(beta.MCMC[(burnin+1):iters,]),2,median)
+  beta.obj <- mcmc(beta.MCMC,start=(burnin+1),end=iters)
+  beta.hpd <- HPDinterval(beta.obj,prob=0.95)[,]
+  tauc.median <- median(tauc.MCMC[(burnin+1):iters])
+  tauc.obj <- mcmc(tauc.MCMC,start=(burnin+1),end=iters)
+  tauc.hpd <- HPDinterval(tauc.obj,prob=0.95)[,]
+  tauc.accept <- accept.tauc/iters
+  sigma2.median <- median(sigma2.MCMC[(burnin+1):iters])
+  sigma2.obj <- mcmc(sigma2.MCMC,start=(burnin+1),end=iters)
+  sigma2.hpd <- HPDinterval(sigma2.obj,prob=0.95)[,]
+  sigma2.accept <- accept.sigma2/iters
 
-    return(list(beta.median=beta.median,beta.hpd=beta.hpd,tauc.median=tauc.median,tauc.hpd=tauc.hpd,
-                sigma2.median=sigma2.median,sigma2.hpd=sigma2.hpd,
-                tauc.accept=tauc.accept,sigma2.accept=sigma2.accept))
+  return(list(beta.median=beta.median,beta.hpd=beta.hpd,tauc.median=tauc.median,tauc.hpd=tauc.hpd,
+              sigma2.median=sigma2.median,sigma2.hpd=sigma2.hpd,
+              tauc.accept=tauc.accept,sigma2.accept=sigma2.accept))
 }

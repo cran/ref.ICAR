@@ -19,27 +19,27 @@
 #' @examples
 #' ## Refer to the vignette attached to the package.
 reg.summary <- function(MCMCchain,X,Y,burnin) {
-    num.reg <- length(Y)
+  num.reg <- length(Y)
 
-    # specify fixed effect regression coefficients
-    betavec <- MCMCchain[((burnin+1):nrow(MCMCchain)),3:(3+ncol(X)-1)]
+  # specify fixed effect regression coefficients
+  betavec <- MCMCchain[((burnin+1):nrow(MCMCchain)),3:(3+ncol(X)-1)]
 
-    # specify model values for spatial effects
-    phi.composite <- MCMCchain[((burnin+1):nrow(MCMCchain)),(3+ncol(X)):ncol(MCMCchain)]
+  # specify model values for spatial effects
+  phi.composite <- MCMCchain[((burnin+1):nrow(MCMCchain)),(3+ncol(X)):ncol(MCMCchain)]
 
-    # fitted posteriors by region
-    fit.dist <- matrix(0,nrow=nrow(MCMCchain)-burnin, ncol=num.reg)
-    for(k in 1:(nrow(MCMCchain)-burnin)) {
-        fit.dist[k,] <- X%*%betavec[k,] + as.matrix(phi.composite[k,])
-    }
+  # fitted posteriors by region
+  fit.dist <- matrix(0,nrow=nrow(MCMCchain)-burnin, ncol=num.reg)
+  for(k in 1:(nrow(MCMCchain)-burnin)) {
+    fit.dist[k,] <- X%*%betavec[k,] + as.matrix(phi.composite[k,])
+  }
 
-    # regional medians and intervals
-    reg.medians <- apply(fit.dist,2,median)
+  # regional medians and intervals
+  reg.medians <- apply(fit.dist,2,median)
 
-    reg.cred <- data.frame(t(apply(fit.dist, 2, FUN = quantile, prob = c(0.025, 0.975))))
+  reg.cred <- data.frame(t(apply(fit.dist, 2, FUN = quantile, prob = c(0.025, 0.975))))
 
-    reg.obj <- mcmc(fit.dist,start=(burnin+1),end=nrow(fit.dist))
-    reg.hpd <- HPDinterval(reg.obj,prob=0.95)[,]
+  reg.obj <- mcmc(fit.dist,start=(burnin+1),end=nrow(fit.dist))
+  reg.hpd <- HPDinterval(reg.obj,prob=0.95)[,]
 
-    return(list(fit.dist=fit.dist,reg.medians=reg.medians,reg.hpd=reg.hpd))
+  return(list(fit.dist=fit.dist,reg.medians=reg.medians,reg.hpd=reg.hpd))
 }

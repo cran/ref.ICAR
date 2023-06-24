@@ -22,13 +22,13 @@ matrix can be used with the objective ICAR model \insertCite{Keefe_2018}{ref.ICA
 \examples{
 #### Load extra libraries
 library(sp)
-library(rgdal)
+library(sf)
 
 ### Read in a shapefile of the contiguous U.S. from package data
 system.path <- system.file("extdata", "us.shape48.shp", package = "ref.ICAR", mustWork = TRUE)
 shp.layer <- gsub('.shp','',basename(system.path))
 shp.path <- dirname(system.path)
-us.shape48 <- readOGR(dsn = path.expand(shp.path), layer = shp.layer, verbose = FALSE)
+us.shape48 <- st_read(dsn = path.expand(shp.path), layer = shp.layer)
 
 shp.data <- shape.H(system.path)
 names(shp.data)

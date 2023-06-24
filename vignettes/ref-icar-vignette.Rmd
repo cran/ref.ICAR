@@ -14,7 +14,7 @@ csl: journal-of-the-american-statistical-association.csl
 
 ---
 nocite: |
-  @keefe2018, @Keefe_2018, @Hierarchical_2014
+  @keefe2018, @Keefe_2018, @Hierarchical_2014, @Porter2023, @Ferreira2021
 ...
 
 ```{r setup, include=FALSE,warning=F}
@@ -26,7 +26,7 @@ library(captioner)
 
 # 1   Introduction
 
-The **ref.ICAR** package performs objective Bayesian analysis using a reference prior proposed by Keefe et al. [-@keefe2018].  This model provides an approach for modeling spatially correlated areal data, using an intrinsic conditional autoregressive (ICAR) component with a reference prior on a vector of spatial random effects.
+The **ref.ICAR** package performs objective Bayesian analysis using a reference prior proposed by Keefe et al. [-@keefe2018].  This model provides an approach for modeling spatially correlated areal data, using an intrinsic conditional autoregressive (ICAR) component on a vector of spatial random effects with a reference prior for all model parameters.  Ferreira et al. [-@Ferreira_2021] developed faster MCMC sampling for the ICAR model with reference prior, and Porter et al. [-@Porter_2023] developed objective Bayesian model selection based on fractional Bayes factors for the model.
 
 
 # 2   Functions
@@ -36,16 +36,18 @@ The **ref.ICAR** package performs objective Bayesian analysis using a reference 
 
 * `ref.MCMC()` Implements the posterior sampling algorithm proposed by Keefe et al. [-@keefe2018].  Generates MCMC chains for parameter and regional inferences.
 
-* `ref.summary()` Provides posterior inferences for the model parameters, $\tau_c$, $\boldsymbol{\beta}$, and $\sigma^2$.  Includes posterior medians, highest posterior density (HPD) intervals, and acceptance rates for each parameter.
+* `ref.summary()` Provides posterior inferences for the model parameters, $\tau$, $\boldsymbol{\beta}$, and $\sigma^2$.  Includes posterior medians, highest posterior density (HPD) intervals, and acceptance rates for each parameter.
 
 * `reg.summary()` Provides fitted posterior values and summaries for each subregion in the areal data set.  Includes posterior medians and HPD intervals by region.
 
-* `ref.plot()` Outputs trace plots for the model parameters, $\tau_c$, $\boldsymbol{\beta}$, and $\sigma^2$.
+* `ref.plot()` Outputs trace plots for the model parameters, $\tau$, $\boldsymbol{\beta}$, and $\sigma^2$.
 
 * `ref.analysis()` Performs analysis by sequentially implementing each of the functions above.  This function produces plots and a list containing MCMC chains, parameter estimates, regional estimates, and sampling acceptance rates.
 
+* `probs.icar()` Performs simultaneous, objective Bayesian model selection for covariates and spatial model structure for areal data.  This function provides posterior model probabilities for all candidate ICAR models and OLMs.
 
-# 3   Model
+
+# 3   ICAR Model Summary
 The model implemented by **ref.ICAR** is summarized below.
 \begin{equation}
 \mathbf{Y}= X \boldsymbol{\boldsymbol{\beta}}+\boldsymbol{\theta}+\boldsymbol{\phi}
@@ -63,10 +65,10 @@ where
 
 * $\boldsymbol{\phi}$ is an $n\times1$ vector of spatial random effects that is assigned an intrinsic CAR prior with the sum-zero constraint $\sum_{i=1}^n \phi_i=0$ [@Keefe_2018].
 
-The model assumes a signal-to-noise ratio parameterization for the variance components of the random components of the model, so $\sigma^2$ and $\tau_c$ are used as below.
-$$\boldsymbol{\phi} \sim \bigg(\textbf{0},\frac{\sigma^2}{\tau_c}\Sigma_{\phi}\bigg)$$
+The model assumes a signal-to-noise ratio parameterization for the variance components of the random components of the model, so $\sigma^2$ and $\tau$ are used as below.
+$$\boldsymbol{\phi} \sim \bigg(\textbf{0},\frac{\sigma^2}{\tau}\Sigma_{\phi}\bigg)$$
 
-The parameter $\tau_c$ controls the strength of spatial dependence, and given the neighborhood structure, $\Sigma_{\phi}$ is a fixed matrix.  Specifically, $\Sigma_{\phi}$ is the Moore-Penrose inverse of $H$, where the neighborhood matrix $H$ is an $n\times n$ symmetric matrix constructed as follows.
+The parameter $\tau$ controls the strength of spatial dependence, and given the neighborhood structure, $\Sigma_{\phi}$ is a fixed matrix.  Specifically, $\Sigma_{\phi}$ is the Moore-Penrose inverse of $H$, where the neighborhood matrix $H$ is an $n\times n$ symmetric matrix constructed as follows.
 \begin{equation}
 (H)_{ij} = 
 \begin{cases} 
@@ -81,12 +83,12 @@ and each off-diagonal element equals $-1$ if the corresponding subregions are ne
 
 Provided a path to a shapefile, the `shape.H()` function in **ref.ICAR** constructs $H$ as specified above, and checks for symmetry and contiguous regions (i.e. no islands) prior to analysis.  The functions `shape.H()` and `ref.analysis()` requires a file path to a shapefile.  If a user wants to analyze areal data without a corresponding shapefile (e.g. neuroimaging), they will need to construct $H$ as above and use this $H$ in `ref.MCMC()`.  `ref.plot()`,`ref.summary()`, and `reg.summary()` can then be used with the MCMC chains obtained from `ref.MCMC()`.  Additionally, if a user performs analysis without `ref.analysis()`, the regions corresponding to data values in $X$ and $y$ must match the region order in $H$; otherwise inferences will be matched to incorrect regions.
 
-# 4   Example
+# 4   Example: Objective ICAR Inference
 
 Consider an example of areal data over the contiguous United States.  Figure 1 represents the average SAT scores reported in 1999 for each of the contiguous United States and Washington D.C.  This example will explore these data and use the **ref.ICAR** package to fit a model to the response, Verbal SAT scores, considering spatial dependence and a single covariate, percent of eligible students that took the SAT in each state in 1999.  This data was analyzed in *Hierarchical Modeling and Analysis for Spatial Data* [@Hierarchical_2014]. The data are available online at
 https://www.counterpointstat.com/hierarchical-modeling-and-analysis-for-spatial-data.html.  We make it available in the **ref.ICAR** package with permission from the authors.  The shapefile is found from http://www.arcgis.com/home/item.html?id=f7f805eb65eb4ab787a0a3e1116ca7e5.
 
-These data and the accompanying shapefile are attached to the **ref.ICAR** package.  The files can be loaded into R as shown below.  The `readOGR()` function from package **rgdal** is used to read the shapefile.
+These data and the accompanying shapefile are attached to the **ref.ICAR** package.  The files can be loaded into R as shown below.  The `st_read()` function from package **sf** is used to read the shapefile.
 
 ```{r echo = F, eval = T}
 fig_nums <- captioner(prefix = "Figure")
@@ -97,13 +99,13 @@ fit_cap <- fig_nums(name = "fits", caption = "Posterior Medians for Verbal SAT")
 
 ```{r echo = T, eval = T, warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=58)}
 
-library(rgdal)
+library(sf)
 
 system.path <- system.file("extdata", "us.shape48.shp", package = "ref.ICAR", mustWork = TRUE)
 shp.layer <- gsub('.shp','',basename(system.path))
 shp.path <- dirname(system.path)
 
-us.shape48 <- readOGR(dsn = path.expand(shp.path), layer = shp.layer, verbose = FALSE)
+us.shape48 <- st_read(dsn = path.expand(shp.path), layer = shp.layer, quiet = TRUE)
 ```
 The SAT data can be loaded into R from **ref.ICAR** using `read.table()`.
 
@@ -122,21 +124,46 @@ Now that the shapefile and data are loaded, the observed data can be plotted as 
 
 ```{r echo = T, eval = T,fig.cap=sat_cap, warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=60),fig.align="center",fig.pos="h",fig.width=7,fig.height=5.5}
 
-library(RColorBrewer)
-library(sp)
+library(ggplot2)
+library(classInt)
+library(dplyr)
 
-verbal.brk <- quantile(sats48$VERBAL,c(0,.2,.4,.6,0.8,1)) + c(-.1,0,0,0,0,.1)
-verbal.color<-brewer.pal(5,"Greys")
-spplot(us.shape48, "verbal", at = verbal.brk, col.regions = verbal.color,par.settings = list(panel.background=list(col="white")), main="Observed Verbal SAT Scores")
+breaks_qt <- classIntervals(c(min(us.shape48$verbal) - .00001, us.shape48$verbal), n = 7, style = "quantile")
+
+us.shape48_sf <- mutate(us.shape48, score_cat = cut(verbal, breaks_qt$brks))
+ggplot(us.shape48_sf) + 
+    geom_sf(aes(fill=score_cat)) +
+    scale_fill_brewer(palette = "OrRd") + 
+    labs(title="Plot of observed \n verbal SAT scores") +
+    theme_bw() +
+    theme(axis.ticks.x=element_blank(), 
+          axis.text.x=element_blank(),
+          axis.ticks.y=element_blank(), 
+          axis.text.y=element_blank(),
+          axis.title=element_text(size=25,face="bold"),
+          plot.title = element_text(face="bold", size=25, hjust=0.5)) +
+    guides(fill=guide_legend("Verbal score"))
 ```
 
 Similarly, the covariate, percent of eligible students taking the SAT, can be plotted over the contiguous United States.  These data exhibit a seemingly inverse relationship to the SAT scores; lower percentages of students take the SAT in the Midwest.
 
 ```{r echo = T, eval = T,fig.cap=percent_cap, warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=60),fig.align="center",fig.pos="h",fig.width=7,fig.height=5.5}
 
-percent.brk <- quantile(sats48$PERCENT,c(0,.2,.4,.6,0.8,1)) + c(-.1,0,0,0,0,.1)
-percent.color <- brewer.pal(5, "Greys")
-spplot(us.shape48, "percent", at = percent.brk, col.regions = percent.color,par.settings = list(panel.background=list(col="white")),main="Percent Taking SAT")
+breaks_qt <- classIntervals(c(min(us.shape48$percent) - .00001, us.shape48$percent), n = 7, style = "quantile")
+
+us.shape48_sf <- mutate(us.shape48, pct_cat = cut(percent, breaks_qt$brks))
+ggplot(us.shape48_sf) + 
+    geom_sf(aes(fill=pct_cat)) +
+    scale_fill_brewer(palette = "OrRd") + 
+    labs(title="Plot of observed \n percent SAT takers") +
+    theme_bw() +
+    theme(axis.ticks.x=element_blank(), 
+          axis.text.x=element_blank(),
+          axis.ticks.y=element_blank(), 
+          axis.text.y=element_blank(),
+          axis.title=element_text(size=25,face="bold"),
+          plot.title = element_text(face="bold", size=25, hjust=0.5)) +
+    guides(fill=guide_legend("Percent taking"))
 ```
 
 Employing the functions in **ref.ICAR**, the `shape.H()` function first takes the path to the shape file (obtained above), and returns a list of two objects.  This list contains the neighborhood matrix, $H$ and a $\texttt{SpatialPolygonsDataFrame}$ object corresponding to the shapefile, to be used by the remaining functions.
@@ -144,6 +171,7 @@ Employing the functions in **ref.ICAR**, the `shape.H()` function first takes th
 ```{r echo = T, eval = T, warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=60)}
 
 library(ref.ICAR)
+library(spdep)
 
 shp.data <- shape.H(system.path)
 H <- shp.data$H
@@ -161,9 +189,10 @@ x <- sats48$PERCENT
 X <- cbind(1,x)
 ```
 
-Then sampling can be performed using `ref.MCMC()`.  The default starting values are used below, with MCMC iterations and burn-in larger than the default.
+Then sampling can be performed using `ref.MCMC()`.  The default starting values are used below, with MCMC iterations and burn-in larger than the default.  The sampling for `ref.MCMC()` is based on developments by Ferreira et al. [-@Ferreira_2021], who express the spatial hierarchical model in the spectral domain to obtain the faster Spectral Gibbs Sampler (SGS).  Previous versions of **ref.ICAR** implemented the Spectral Decomposition of the Precision (SDP) algorithm proposed by Keefe et al. [-@keefe2018].  See Ferreira et al. [-@Ferreira_2021] for an outline of the algorithm and computational comparisons.
 
 ```{r echo = T, eval = T, warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=60)}
+library(mvtnorm)
 set.seed(3456)
 
 ref.SAT <- ref.MCMC(y=Y,X=X,H=H,iters=15000,burnin=5000,verbose=FALSE)
@@ -178,9 +207,10 @@ par(mfrow=c(2,2))
 ref.plot(ref.SAT$MCMCchain,X,burnin=5000,num.reg=length(Y))
 ```
 
-The remaining components for the analysis are the functions for parameter and regional inferences.  The function `ref.summary()` provides posterior medians and intervals for the model parameters $\boldsymbol{\beta}$, $\tau_c$, and $\sigma^2$.  The function `ref.summary()` provides medians and Highest Posterior Density intervals for the fitted $y$ values for each subregion in the data.
+The remaining components for the analysis are the functions for parameter and regional inferences.  The function `ref.summary()` provides posterior medians and intervals for the model parameters $\boldsymbol{\beta}$, $\tau$, and $\sigma^2$.  The function `ref.summary()` provides medians and Highest Posterior Density intervals for the fitted $y$ values for each subregion in the data.
 
 ```{r echo = T, eval = T, warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=60)}
+library(coda)
 
 summary.params <- ref.summary(MCMCchain=ref.SAT$MCMCchain,tauc.MCMC=ref.SAT$tauc.MCMC,sigma2.MCMC=ref.SAT$sigma2.MCMC,beta.MCMC=ref.SAT$beta.MCMC,phi.MCMC=ref.SAT$phi.MCMC,accept.phi=ref.SAT$accept.phi,accept.sigma2=ref.SAT$accept.sigma2,accept.tauc=ref.SAT$accept.tauc,iters=15000,burnin=5000)
 
@@ -188,14 +218,29 @@ names(summary.params)
 summary.params
 ```
 
-The posterior medians for $\beta_0$ and $\beta_1$ are 575.496 and -1.145, respectively.  Additionally, the HPD interval for $\beta_1$ does not include $0$, which indicates that as the percent of eligible students taking the SAT increases, average Verbal SAT score tends to descrease.  The $\tau_c$ median is 0.08, with HPD interval between 0.0014 and 0.5237.
+The posterior medians for $\beta_0$ and $\beta_1$ are 575.496 and -1.145, respectively.  Additionally, the HPD interval for $\beta_1$ does not include $0$, which indicates that as the percent of eligible students taking the SAT increases, average Verbal SAT score tends to decrease.  The $\tau$ median is 0.08, with HPD interval between 0.0014 and 0.5237.
 
 ```{r echo = T, eval = T,fig.cap=fit_cap, warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=60),fig.align="center",fig.pos="h",fig.width=7,fig.height=5.5}
 
 summary.region <- reg.summary(ref.SAT$MCMCchain,X,Y,burnin=5000)
 
 us.shape48$verbalfits <- summary.region$reg.medians
-spplot(us.shape48, "verbalfits", at = verbal.brk, col.regions = verbal.color,main="Posterior Medians for Verbal SAT",par.settings = list(panel.background=list(col="white")))
+
+breaks_qt <- classIntervals(c(min(us.shape48$verbalfits) - .00001, us.shape48$verbalfits), n = 7, style = "quantile")
+
+us.shape48_sf <- mutate(us.shape48, reg_cat = cut(verbalfits, breaks_qt$brks))
+ggplot(us.shape48_sf) + 
+    geom_sf(aes(fill=reg_cat)) +
+    scale_fill_brewer(palette = "OrRd") + 
+    labs(title="Plot of fitted \n verbal SAT scores") +
+    theme_bw() +
+    theme(axis.ticks.x=element_blank(), 
+          axis.text.x=element_blank(),
+          axis.ticks.y=element_blank(), 
+          axis.text.y=element_blank(),
+          axis.title=element_text(size=25,face="bold"),
+          plot.title = element_text(face="bold", size=25, hjust=0.5)) +
+    guides(fill=guide_legend("Region medians"))
 ```
 
 Finally, the function `ref.analysis()` in **ref.ICAR** performs the entire reference analysis, including:
@@ -224,5 +269,95 @@ sat.analysis <- ref.analysis(system.path,X,Y,x.reg.names,y.reg.names,shp.reg.nam
 
 names(sat.analysis)
 ```
+
+# 5   Example: Objective Model Selection for Areal Data
+Porter et al. [-@Porter_2023] developed objective Bayesian model selection for simultaneous selection of covariates and spatial model structure for areal data.  Since the joint reference prior on model parameters is improper [@keefe2018], fractional Bayes factor methodology is used to approximate Bayes factors and obtain valid posterior model probabilities for all candidate ICAR models and OLMs from the provided candidate covariates.  See Porter et al. [-@Porter_2023] for the method details and simulation results, including the minimal training size for the fractional Bayes factor that is recommended for this approach.  The following is a code example that uses case study data seen in Porter et al. [-@Porter_2023].  The data is available with the **spdep** package, which is imported by **ref.ICAR**.  The outcome of interest is the residential crime rate across the 49 neighborhoods of Columbus, Ohio. The five candidate predictors include average housing value, average household income, amount of open space in each neighborhood, the number of housing units without available plumbing, and distance from the Columbus business district.  Reading the data into R using `st_read()`, creates an \texttt{sf} object, which includes the response variable and the candidate covariates.
+
+```{r echo = T, eval = T, warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=58)}
+
+library(pracma)
+library(stats)
+library(spdep)
+
+# read in the data as contained in the spdep package
+columbus <- st_read(system.file("shapes/columbus.shp", package="spData")[1], quiet=TRUE)
+```
+
+Similarly to the last example, we can plot the response variable, residential crime rate, over the geographic region to visualize which of the 49 neighborhoods have the highest observed crime rates. 
+
+```{r echo = T, eval = T,fig.cap=fit_cap, warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=60),fig.align="center",fig.pos="h",fig.width=7,fig.height=5.5}
+
+breaks_qt <- classIntervals(c(min(columbus$CRIME) - .00001, columbus$CRIME), n = 7, style = "quantile")
+
+columbus_sf <- mutate(columbus, crime_cat = cut(CRIME, breaks_qt$brks))
+ggplot(columbus_sf) + 
+    geom_sf(aes(fill=crime_cat)) +
+    scale_fill_brewer(palette = "OrRd") + 
+    labs(title="Plot of observed \n neighborhood crime rates") +
+    theme_bw() +
+    theme(axis.ticks.x=element_blank(), 
+          axis.text.x=element_blank(),
+          axis.ticks.y=element_blank(), 
+          axis.text.y=element_blank(),
+          axis.title=element_text(size=25,face="bold"),
+          plot.title = element_text(face="bold", size=25, hjust=0.5)) +
+    guides(fill=guide_legend("Neighborhood \n crime rate"))
+```
+
+Upon reading in the data, we can begin to fit each of the candidate models for the data based on combinations of the covariates and whether or not the model contains ICAR random effects.  We consider all possible OLMs and ICAR models from the 5 candidate covariates, resulting in a model space of size $2 \times 2^5=64$.  Each of the candidate ICAR models uses the same neighborhood matrix $H$, based on the 49 subregions, which we can define as follows. 
+
+```{r echo = T, eval = T, warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=58)}
+
+# create neighborhood matrix
+columbus.listw <- poly2nb(columbus)
+summary(columbus.listw)
+W <- nb2mat(columbus.listw, style="B")
+Dmat <- diag(apply(W,1,sum))
+num.reg <- length(columbus$CRIME)
+
+H <- Dmat - W
+H <- (H+t(H))/2
+rownames(H) <- NULL
+isSymmetric(H)  # check that neighborhood matrix is symmetrix before proceeding
+
+# spectral quantities for use in model selection
+H.spectral <- eigen(H, symmetric=TRUE)
+Q <- H.spectral$vectors
+eigH <- H.spectral$values
+phimat <- diag(1/sqrt(eigH[1:(num.reg-1)]))
+Sig_phi <- matrix(0,num.reg, num.reg) #initialize
+for(i in 1:(num.reg-1)){
+  total <- (1/(eigH[i]))*Q[,i]%*%t(Q[,i])
+  Sig_phi <- Sig_phi + total
+}
+
+# define response and design matrix
+Y <- columbus$CRIME
+X <- cbind(1, columbus$HOVAL, columbus$INC, columbus$OPEN, columbus$PLUMB, columbus$DISCBD)
+b <- (ncol(X)+1)/num.reg  # specify the minimal training size for this example
+
+# perform model selection
+columbus.select <- probs.icar(Y=Y,X=X,H=H,
+                              H.spectral=H.spectral,
+                              Sig_phi=Sig_phi,
+                              b=b,verbose=FALSE)
+
+# print the model with highest posterior model probability
+columbus.select$probs.mat[which.max(columbus.select$probs.mat[,1]),]
+
+# print vector of posterior inclusion probabilities for each covariate
+post.include.cov <- matrix(NA,nrow = 1, ncol=ncol(X)-1)
+labels <- c(rep(NA, ncol(X)-1))
+for(i in 1:(ncol(X)-1)){labels[i] <- paste("X", i, sep="")}
+colnames(post.include.cov) <- labels
+
+for(j in 1:ncol(X)-1){
+  post.include.cov[,j] <- sum(columbus.select$probs.mat[grep(paste("X",j,sep=""), columbus.select$probs.mat$'model form'), 1])
+}
+
+post.include.cov
+```
+
+As an extension to the objective Bayesian model selection for spatial ICAR models, the R package **GLMMselect** uses fractional Bayes factor methodology to simultaneously select fixed effects and random effects in Generalized Linear Mixed Models (GLMMs) where the covariance structure for the random effects is a product of a unknown scalar and a known semi-positive definite matrix. **GLMMselect** (https://CRAN.R-project.org/package=GLMMselect) can currently be used for model selection for Poisson and Bernoulli data, based on the methodology in Xu et al. [-@Xu_2023].
 
 # References

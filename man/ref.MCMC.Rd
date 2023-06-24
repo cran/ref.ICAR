@@ -4,9 +4,19 @@
 \alias{ref.MCMC}
 \title{MCMC for Reference Prior on an Intrinsic Conditional Autoregressive Random Effects Model for Areal Data}
 \usage{
-ref.MCMC(y, X, H, iters = 10000, burnin = 5000, verbose = TRUE,
-  tauc.start = 1, beta.start = 1, sigma2.start = 1,
-  step.tauc = 0.5, step.sigma2 = 0.5)
+ref.MCMC(
+  y,
+  X,
+  H,
+  iters = 10000,
+  burnin = 5000,
+  verbose = TRUE,
+  tauc.start = 1,
+  beta.start = 1,
+  sigma2.start = 1,
+  step.tauc = 0.5,
+  step.sigma2 = 0.5
+)
 }
 \arguments{
 \item{y}{Vector of responses.}
@@ -43,9 +53,10 @@ A list containing MCMC chains and parameter summaries.
     \item{accept.phi}{Final acceptance number for spatial random effects.}
 }
 \description{
-Implements the Metropolis-within-Gibbs sampling algorithm proposed by Keefe et al. (2018),
+Implements the Metropolis-within-Gibbs sampling algorithm proposed by Ferreira et al. (2021),
 to perform posterior inference for the intrinsic conditional autoregressive model with spatial
-random effects.
+random effects.  This algorithm uses the spectral domain for the hierarchical model to create the
+Spectral Gibbs Sampler (SGS), which provides notable speedups to the MCMC algorithm proposed by Keefe et al (2019).
 }
 \examples{
 #### Fit the model for simulated areal data on a grid ####
@@ -106,6 +117,8 @@ sigma2.start=.1,step.tauc=0.5,
 \insertRef{keefe2018}{ref.ICAR}
 
 \insertRef{Keefe_2018}{ref.ICAR}
+
+\insertRef{Ferreira_2021}{ref.ICAR}
 }
 \author{
 Erica M. Porter, Matthew J. Keefe, Christopher T. Franck, and Marco A.R. Ferreira

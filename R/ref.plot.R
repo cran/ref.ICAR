@@ -16,13 +16,13 @@
 #' @examples
 #' ## Refer to the vignette attached to the package.
 ref.plot <- function(MCMCchain, X, burnin, num.reg) {
-    plot(MCMCchain[(burnin+1):nrow(MCMCchain),1], type='l', ylab="tauc")
-    plot(MCMCchain[(burnin+1):nrow(MCMCchain),2], type='l', ylab="sigma2")
-    #check for an intercept to correctly label plots
-    if (mean(as.matrix(X[ ,1]))==1) {
-        for (i in 3:(dim(MCMCchain)[2]-num.reg)) {
-            plot(MCMCchain[(burnin+1):nrow(MCMCchain),i], type='l', ylab=paste("beta ",i-3))}
-    }else {for (i in 3:(dim(MCMCchain)[2]-num.reg)) {
-            plot(MCMCchain[(burnin+1):nrow(MCMCchain),i], type='l', ylab=paste("beta ",i-2))}
-    }
+  plot(MCMCchain[(burnin+1):nrow(MCMCchain),1], type='l', ylab="tauc")
+  plot(MCMCchain[(burnin+1):nrow(MCMCchain),2], type='l', ylab="sigma2")
+  #check for an intercept to correctly label plots
+  if (mean(as.matrix(X[ ,1]))==1) {
+    for (i in 3:(dim(MCMCchain)[2]-num.reg)) {
+      plot(MCMCchain[(burnin+1):nrow(MCMCchain),i], type='l', ylab=paste("beta ",i-3))}
+  }else {for (i in 3:(dim(MCMCchain)[2]-num.reg)) {
+    plot(MCMCchain[(burnin+1):nrow(MCMCchain),i], type='l', ylab=paste("beta ",i-2))}
+  }
 }
