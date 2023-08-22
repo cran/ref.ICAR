@@ -21,7 +21,6 @@ nocite: |
 knitr::opts_chunk$set(echo = TRUE)
 #knitr::opts_chunk$set(fig.width=8, fig.height=6)
 library(rcrossref)
-library(captioner)
 ```
 
 # 1   Introduction
@@ -90,13 +89,6 @@ https://www.counterpointstat.com/hierarchical-modeling-and-analysis-for-spatial-
 
 These data and the accompanying shapefile are attached to the **ref.ICAR** package.  The files can be loaded into R as shown below.  The `st_read()` function from package **sf** is used to read the shapefile.
 
-```{r echo = F, eval = T}
-fig_nums <- captioner(prefix = "Figure")
-sat_cap <- fig_nums(name = "sat", caption = "Observed Verbal SAT Scores")
-percent_cap <- fig_nums(name = "percent", caption = "Percent of eligible students taking the SAT")
-fit_cap <- fig_nums(name = "fits", caption = "Posterior Medians for Verbal SAT")
-```
-
 ```{r echo = T, eval = T, warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=58)}
 
 library(sf)
@@ -122,7 +114,7 @@ us.shape48$percent <- sats48$PERCENT
 
 Now that the shapefile and data are loaded, the observed data can be plotted as a choropleth map (Figure 1).  This map illustrates the spatial dependence to be analyzed by the model.  The Midwestern states and Utah exhibit the highest average SAT scores, and overall, neighboring states have similar average scores.
 
-```{r echo = T, eval = T,fig.cap=sat_cap, warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=60),fig.align="center",fig.pos="h",fig.width=7,fig.height=5.5}
+```{r echo = T, eval = T,fig.cap="Figure 1: Observed Verbal SAT Scores", warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=60),fig.align="center",fig.pos="h",fig.width=7,fig.height=5.5}
 
 library(ggplot2)
 library(classInt)
@@ -147,7 +139,7 @@ ggplot(us.shape48_sf) +
 
 Similarly, the covariate, percent of eligible students taking the SAT, can be plotted over the contiguous United States.  These data exhibit a seemingly inverse relationship to the SAT scores; lower percentages of students take the SAT in the Midwest.
 
-```{r echo = T, eval = T,fig.cap=percent_cap, warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=60),fig.align="center",fig.pos="h",fig.width=7,fig.height=5.5}
+```{r echo = T, eval = T,fig.cap="Figure 2: Percent of eligible students taking the SAT", warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=60),fig.align="center",fig.pos="h",fig.width=7,fig.height=5.5}
 
 breaks_qt <- classIntervals(c(min(us.shape48$percent) - .00001, us.shape48$percent), n = 7, style = "quantile")
 
@@ -220,7 +212,7 @@ summary.params
 
 The posterior medians for $\beta_0$ and $\beta_1$ are 575.496 and -1.145, respectively.  Additionally, the HPD interval for $\beta_1$ does not include $0$, which indicates that as the percent of eligible students taking the SAT increases, average Verbal SAT score tends to decrease.  The $\tau$ median is 0.08, with HPD interval between 0.0014 and 0.5237.
 
-```{r echo = T, eval = T,fig.cap=fit_cap, warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=60),fig.align="center",fig.pos="h",fig.width=7,fig.height=5.5}
+```{r echo = T, eval = T,fig.cap="Figure 3: Posterior Medians for Verbal SAT", warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=60),fig.align="center",fig.pos="h",fig.width=7,fig.height=5.5}
 
 summary.region <- reg.summary(ref.SAT$MCMCchain,X,Y,burnin=5000)
 
@@ -285,7 +277,7 @@ columbus <- st_read(system.file("shapes/columbus.shp", package="spData")[1], qui
 
 Similarly to the last example, we can plot the response variable, residential crime rate, over the geographic region to visualize which of the 49 neighborhoods have the highest observed crime rates. 
 
-```{r echo = T, eval = T,fig.cap=fit_cap, warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=60),fig.align="center",fig.pos="h",fig.width=7,fig.height=5.5}
+```{r echo = T, eval = T,fig.cap="Figure 4: Plot of observed crime rates for Columbus, OH neighborhoods", warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=60),fig.align="center",fig.pos="h",fig.width=7,fig.height=5.5}
 
 breaks_qt <- classIntervals(c(min(columbus$CRIME) - .00001, columbus$CRIME), n = 7, style = "quantile")
 

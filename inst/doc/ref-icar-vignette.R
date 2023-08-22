@@ -2,13 +2,6 @@
 knitr::opts_chunk$set(echo = TRUE)
 #knitr::opts_chunk$set(fig.width=8, fig.height=6)
 library(rcrossref)
-library(captioner)
-
-## ----echo = F, eval = T-------------------------------------------------------
-fig_nums <- captioner(prefix = "Figure")
-sat_cap <- fig_nums(name = "sat", caption = "Observed Verbal SAT Scores")
-percent_cap <- fig_nums(name = "percent", caption = "Percent of eligible students taking the SAT")
-fit_cap <- fig_nums(name = "fits", caption = "Posterior Medians for Verbal SAT")
 
 ## ----echo = T, eval = T, warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=58)----
 
@@ -30,7 +23,7 @@ sats48 <- read.table(data.path, header = T)
 us.shape48$verbal <- sats48$VERBAL
 us.shape48$percent <- sats48$PERCENT
 
-## ----echo = T, eval = T,fig.cap=sat_cap, warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=60),fig.align="center",fig.pos="h",fig.width=7,fig.height=5.5----
+## ----echo = T, eval = T,fig.cap="Figure 1: Observed Verbal SAT Scores", warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=60),fig.align="center",fig.pos="h",fig.width=7,fig.height=5.5----
 
 library(ggplot2)
 library(classInt)
@@ -52,7 +45,7 @@ ggplot(us.shape48_sf) +
           plot.title = element_text(face="bold", size=25, hjust=0.5)) +
     guides(fill=guide_legend("Verbal score"))
 
-## ----echo = T, eval = T,fig.cap=percent_cap, warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=60),fig.align="center",fig.pos="h",fig.width=7,fig.height=5.5----
+## ----echo = T, eval = T,fig.cap="Figure 2: Percent of eligible students taking the SAT", warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=60),fig.align="center",fig.pos="h",fig.width=7,fig.height=5.5----
 
 breaks_qt <- classIntervals(c(min(us.shape48$percent) - .00001, us.shape48$percent), n = 7, style = "quantile")
 
@@ -107,7 +100,7 @@ summary.params <- ref.summary(MCMCchain=ref.SAT$MCMCchain,tauc.MCMC=ref.SAT$tauc
 names(summary.params)
 summary.params
 
-## ----echo = T, eval = T,fig.cap=fit_cap, warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=60),fig.align="center",fig.pos="h",fig.width=7,fig.height=5.5----
+## ----echo = T, eval = T,fig.cap="Figure 3: Posterior Medians for Verbal SAT", warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=60),fig.align="center",fig.pos="h",fig.width=7,fig.height=5.5----
 
 summary.region <- reg.summary(ref.SAT$MCMCchain,X,Y,burnin=5000)
 
@@ -150,7 +143,7 @@ library(spdep)
 # read in the data as contained in the spdep package
 columbus <- st_read(system.file("shapes/columbus.shp", package="spData")[1], quiet=TRUE)
 
-## ----echo = T, eval = T,fig.cap=fit_cap, warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=60),fig.align="center",fig.pos="h",fig.width=7,fig.height=5.5----
+## ----echo = T, eval = T,fig.cap="Figure 4: Plot of observed crime rates for Columbus, OH neighborhoods", warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=60),fig.align="center",fig.pos="h",fig.width=7,fig.height=5.5----
 
 breaks_qt <- classIntervals(c(min(columbus$CRIME) - .00001, columbus$CRIME), n = 7, style = "quantile")
 

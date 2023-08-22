@@ -40,14 +40,14 @@ ref.summary(
 }
 \value{
 Parameter summaries
-    \item{beta.median}{Posterior medians of the fixed effect regression coefficients.}
-    \item{beta.hpd}{Highest Posterior Density intervals for the fixed effect regression coefficients.}
-    \item{tauc.median}{Posterior median of the spatial dependence parameter.}
-    \item{tauc.hpd}{Highest Posterior Density interval for the spatial dependence parameter.}
-    \item{sigma2.median}{Posterior median of the unstructured random effects variance.}
-    \item{sigma2.hpd}{Highest Posterior Density interval for the unstructured random effects variance.}
-    \item{tauc.accept}{Final acceptance rate for the spatial dependence parameter.}
-    \item{sigma2.accept}{Final acceptance rate for the unstructured random effects variance.}
+\item{beta.median}{Posterior medians of the fixed effect regression coefficients.}
+\item{beta.hpd}{Highest Posterior Density intervals for the fixed effect regression coefficients.}
+\item{tauc.median}{Posterior median of the spatial dependence parameter.}
+\item{tauc.hpd}{Highest Posterior Density interval for the spatial dependence parameter.}
+\item{sigma2.median}{Posterior median of the unstructured random effects variance.}
+\item{sigma2.hpd}{Highest Posterior Density interval for the unstructured random effects variance.}
+\item{tauc.accept}{Final acceptance rate for the spatial dependence parameter.}
+\item{sigma2.accept}{Final acceptance rate for the unstructured random effects variance.}
 }
 \description{
 Takes a matrix of MCMC chains, iterations, and acceptance values
