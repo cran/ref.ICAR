@@ -21,6 +21,20 @@ nocite: |
 knitr::opts_chunk$set(echo = TRUE)
 #knitr::opts_chunk$set(fig.width=8, fig.height=6)
 library(rcrossref)
+Sys.setenv("PROJ_NETWORK"="ON")
+library(sf)
+library(utils)
+library(ggplot2)
+library(classInt)
+library(RColorBrewer)
+library(dplyr)
+library(ref.ICAR)
+library(mvtnorm)
+library(coda)
+library(pracma)
+library(stats)
+library(spdep)
+library(spData)
 ```
 
 # 1   Introduction
@@ -91,8 +105,6 @@ These data and the accompanying shapefile are attached to the **ref.ICAR** packa
 
 ```{r echo = T, eval = T, warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=58)}
 
-library(sf)
-
 system.path <- system.file("extdata", "us.shape48.shp", package = "ref.ICAR", mustWork = TRUE)
 shp.layer <- gsub('.shp','',basename(system.path))
 shp.path <- dirname(system.path)
@@ -102,8 +114,6 @@ us.shape48 <- st_read(dsn = path.expand(shp.path), layer = shp.layer, quiet = TR
 The SAT data can be loaded into R from **ref.ICAR** using `read.table()`.
 
 ```{r echo = T, eval = T, warning=F, message=F, tidy=TRUE, tidy.opts=list(width.cutoff=58)}
-
-library(utils)
 
 data.path <- system.file("extdata", "states-sats48.txt", package = "ref.ICAR", mustWork = TRUE)
 
@@ -115,10 +125,6 @@ us.shape48$percent <- sats48$PERCENT
 Now that the shapefile and data are loaded, the observed data can be plotted as a choropleth map (Figure 1).  This map illustrates the spatial dependence to be analyzed by the model.  The Midwestern states and Utah exhibit the highest average SAT scores, and overall, neighboring states have similar average scores.
 
 ```{r echo = T, eval = T,fig.cap="Figure 1: Observed Verbal SAT Scores", warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=60),fig.align="center",fig.pos="h",fig.width=7,fig.height=5.5}
-
-library(ggplot2)
-library(classInt)
-library(dplyr)
 
 breaks_qt <- classIntervals(c(min(us.shape48$verbal) - .00001, us.shape48$verbal), n = 7, style = "quantile")
 
@@ -162,9 +168,6 @@ Employing the functions in **ref.ICAR**, the `shape.H()` function first takes th
 
 ```{r echo = T, eval = T, warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=60)}
 
-library(ref.ICAR)
-library(spdep)
-
 shp.data <- shape.H(system.path)
 H <- shp.data$H
 
@@ -184,7 +187,6 @@ X <- cbind(1,x)
 Then sampling can be performed using `ref.MCMC()`.  The default starting values are used below, with MCMC iterations and burn-in larger than the default.  The sampling for `ref.MCMC()` is based on developments by Ferreira et al. [-@Ferreira_2021], who express the spatial hierarchical model in the spectral domain to obtain the faster Spectral Gibbs Sampler (SGS).  Previous versions of **ref.ICAR** implemented the Spectral Decomposition of the Precision (SDP) algorithm proposed by Keefe et al. [-@keefe2018].  See Ferreira et al. [-@Ferreira_2021] for an outline of the algorithm and computational comparisons.
 
 ```{r echo = T, eval = T, warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=60)}
-library(mvtnorm)
 set.seed(3456)
 
 ref.SAT <- ref.MCMC(y=Y,X=X,H=H,iters=15000,burnin=5000,verbose=FALSE)
@@ -202,7 +204,6 @@ ref.plot(ref.SAT$MCMCchain,X,burnin=5000,num.reg=length(Y))
 The remaining components for the analysis are the functions for parameter and regional inferences.  The function `ref.summary()` provides posterior medians and intervals for the model parameters $\boldsymbol{\beta}$, $\tau$, and $\sigma^2$.  The function `ref.summary()` provides medians and Highest Posterior Density intervals for the fitted $y$ values for each subregion in the data.
 
 ```{r echo = T, eval = T, warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=60)}
-library(coda)
 
 summary.params <- ref.summary(MCMCchain=ref.SAT$MCMCchain,tauc.MCMC=ref.SAT$tauc.MCMC,sigma2.MCMC=ref.SAT$sigma2.MCMC,beta.MCMC=ref.SAT$beta.MCMC,phi.MCMC=ref.SAT$phi.MCMC,accept.phi=ref.SAT$accept.phi,accept.sigma2=ref.SAT$accept.sigma2,accept.tauc=ref.SAT$accept.tauc,iters=15000,burnin=5000)
 
@@ -267,33 +268,18 @@ Porter et al. [-@Porter_2023] developed objective Bayesian model selection for s
 
 ```{r echo = T, eval = T, warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=58)}
 
-library(pracma)
-library(stats)
-library(spdep)
-
 # read in the data as contained in the spdep package
-columbus <- st_read(system.file("shapes/columbus.shp", package="spData")[1], quiet=TRUE)
+columbus <- st_read(system.file("shapes/columbus.gpkg", package="spData")[1], quiet=TRUE)
 ```
 
 Similarly to the last example, we can plot the response variable, residential crime rate, over the geographic region to visualize which of the 49 neighborhoods have the highest observed crime rates. 
 
 ```{r echo = T, eval = T,fig.cap="Figure 4: Plot of observed crime rates for Columbus, OH neighborhoods", warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=60),fig.align="center",fig.pos="h",fig.width=7,fig.height=5.5}
 
-breaks_qt <- classIntervals(c(min(columbus$CRIME) - .00001, columbus$CRIME), n = 7, style = "quantile")
+breaks <- c(0.178, 16.5, 22.5, 30.5, 38.3, 44, 54.8, 68.9)
 
-columbus_sf <- mutate(columbus, crime_cat = cut(CRIME, breaks_qt$brks))
-ggplot(columbus_sf) + 
-    geom_sf(aes(fill=crime_cat)) +
-    scale_fill_brewer(palette = "OrRd") + 
-    labs(title="Plot of observed \n neighborhood crime rates") +
-    theme_bw() +
-    theme(axis.ticks.x=element_blank(), 
-          axis.text.x=element_blank(),
-          axis.ticks.y=element_blank(), 
-          axis.text.y=element_blank(),
-          axis.title=element_text(size=25,face="bold"),
-          plot.title = element_text(face="bold", size=25, hjust=0.5)) +
-    guides(fill=guide_legend("Neighborhood \n crime rate"))
+plot(columbus["CRIME"], breaks=breaks, pal=brewer.pal(7, 'OrRd'), 
+     main="Observed neighborhood crime rates", cex.main=2)
 ```
 
 Upon reading in the data, we can begin to fit each of the candidate models for the data based on combinations of the covariates and whether or not the model contains ICAR random effects.  We consider all possible OLMs and ICAR models from the 5 candidate covariates, resulting in a model space of size $2 \times 2^5=64$.  Each of the candidate ICAR models uses the same neighborhood matrix $H$, based on the 49 subregions, which we can define as follows. 
@@ -301,7 +287,7 @@ Upon reading in the data, we can begin to fit each of the candidate models for t
 ```{r echo = T, eval = T, warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=58)}
 
 # create neighborhood matrix
-columbus.listw <- poly2nb(columbus)
+columbus.listw <- poly2nb(columbus) 
 summary(columbus.listw)
 W <- nb2mat(columbus.listw, style="B")
 Dmat <- diag(apply(W,1,sum))

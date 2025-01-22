@@ -12,8 +12,8 @@ shape.H(shape.file)
 \value{
 A list containing a neighborhood matrix and the SpatialPolygonsDataFrame object
 corresponding to the shape file.
-\item{H}{A neighborhood matrix.}
-\item{map}{SpatialPolygonsDataFrame object from the provided shapefile.}
+    \item{H}{A neighborhood matrix.}
+    \item{map}{SpatialPolygonsDataFrame object from the provided shapefile.}
 }
 \description{
 Takes a path to a shape file and creates a neighborhood matrix.  This neighborhood

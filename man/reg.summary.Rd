@@ -17,9 +17,9 @@ reg.summary(MCMCchain, X, Y, burnin)
 }
 \value{
 A list of the fitted distributions by region, and medians and credible intervals by region.
-\item{fit.dist}{Matrix of fitted posterior values for each region in the data.}
-\item{reg.medians}{Vector of posterior medians for fitted response by region.}
-\item{reg.cred}{Data frame of credbile intervals by region.}
+    \item{fit.dist}{Matrix of fitted posterior values for each region in the data.}
+    \item{reg.medians}{Vector of posterior medians for fitted response by region.}
+    \item{reg.cred}{Data frame of credbile intervals by region.}
 }
 \description{
 This function takes data and sampled MCMC chains for an areal data set

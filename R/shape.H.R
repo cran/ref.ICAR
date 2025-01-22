@@ -15,7 +15,7 @@
 #' @export
 #' @examples
 #' #### Load extra libraries
-#' library(sp)
+#' library(spdep)
 #' library(sf)
 #'
 #' ### Read in a shapefile of the contiguous U.S. from package data

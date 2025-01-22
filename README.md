@@ -6,17 +6,17 @@ Implements an objective Bayes intrinsic conditional autoregressive prior. This m
 
 ## Version 2.0.1 changes
 
-Version 2.0.1 of ref.ICAR includes minor changes:
+Version 2.0.2 of ref.ICAR includes minor changes and bug fixes:
 
-* Defines figure captions in the vignette in each code chunk rather than using the `captioner` package (removed from CRAN).
+* Changed how the spatial data for Example 2 of the vignette is read in, made necessary by changes to spData package.
 
-* Corrected some minor typos in the references.
-  
-* Updated the email address for the maintainer (Erica Porter) due to changing academic institutions.
+* Changed how the plot for Example 2 of the vignette is generated, due to a conflict with ggplot2 and the updated sf package.
+
+* Updated the references with correct years and volume numbers.
   
 ## References
 
-Porter, E.M., Franck, C.T., and Ferreira, M.A.R. (2023), “Objective Bayesian model selection for spatial hierarchical models with intrinsic conditional autoregressive priors,” Bayesian Analysis, International Society for Bayesian Analysis, 1, 1–27. https://doi.org/10.1214/23-BA1375.
+Porter, E.M., Franck, C.T., and Ferreira, M.A.R. (2024), “Objective Bayesian model selection for spatial hierarchical models with intrinsic conditional autoregressive priors,” Bayesian Analysis, International Society for Bayesian Analysis, 19(4), 985-1011. https://doi.org/10.1214/23-BA1375.
 
 Ferreira, M.A.R., Porter, E.M., and Franck, C.T. (2021), “Fast and scalable computations for Gaussian hierarchical models with intrinsic conditional autoregressive spatial random effects,” Computational Statistics and Data Analysis, 162, 107264. https://doi.org/10.1016/j.csda.2021.107264.
 

@@ -53,19 +53,19 @@ ref.analysis(
 \value{
 A list containing \code{H}, MCMC chains, parameter summaries, fitted regional values,
 and regional summaries.
-\item{H}{The neighborhood matrix.}
-\item{MCMC}{Matrix of MCMC chains for all model parameters.}
-\item{beta.median}{Posterior medians of the fixed effect regression coefficients.}
-\item{beta.hpd}{Highest Posterior Density intervals for the fixed effect regression coefficients.}
-\item{tauc.median}{Posterior median of the spatial dependence parameter.}
-\item{tauc.hpd}{Highest Posterior Density interval for the spatial dependence parameter.}
-\item{sigma2.median}{Posterior median of the unstructured random effects variance.}
-\item{sigma2.hpd}{Highest Posterior Density interval for the unstructured random effects variance.}
-\item{tauc.accept}{Final acceptance rate for the spatial dependence parameter.}
-\item{sigma2.accept}{Final acceptance rate for the unstructured random effects variance.}
-\item{fit.dist}{Matrix of fitted posterior values for each region in the data.}
-\item{reg.medians}{Vector of posterior medians for fitted response by region.}
-\item{reg.hpd}{Data frame of Highest Posterior Density intervals by region.}
+    \item{H}{The neighborhood matrix.}
+    \item{MCMC}{Matrix of MCMC chains for all model parameters.}
+    \item{beta.median}{Posterior medians of the fixed effect regression coefficients.}
+    \item{beta.hpd}{Highest Posterior Density intervals for the fixed effect regression coefficients.}
+    \item{tauc.median}{Posterior median of the spatial dependence parameter.}
+    \item{tauc.hpd}{Highest Posterior Density interval for the spatial dependence parameter.}
+    \item{sigma2.median}{Posterior median of the unstructured random effects variance.}
+    \item{sigma2.hpd}{Highest Posterior Density interval for the unstructured random effects variance.}
+    \item{tauc.accept}{Final acceptance rate for the spatial dependence parameter.}
+    \item{sigma2.accept}{Final acceptance rate for the unstructured random effects variance.}
+    \item{fit.dist}{Matrix of fitted posterior values for each region in the data.}
+    \item{reg.medians}{Vector of posterior medians for fitted response by region.}
+    \item{reg.hpd}{Data frame of Highest Posterior Density intervals by region.}
 }
 \description{
 Performs analysis on a geographical areal data set using the objective prior

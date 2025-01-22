@@ -31,17 +31,17 @@ probs.icar(
 }
 \value{
 A list containing a data frame with all posterior model probabilities and other selection information.
-\item{probs.mat}{Data frame containing posterior model probabilities for all candidate OLMs and ICAR models from the data.}
-\item{mod.prior}{Vector of model priors used to obtain the posterior model probabilities.}
-\item{logmargin.all}{Vector of all (log) fractional integrated likelihoods.}
-\item{base.model}{Maximum (log) fractional integrated likelihood among all candidate models.  All fractional Bayes factors are obtained with respect to this model.}
-\item{BF.vec}{Vector of fractional Bayes factors for all candidate models.}
+    \item{probs.mat}{Data frame containing posterior model probabilities for all candidate OLMs and ICAR models from the data.}
+    \item{mod.prior}{Vector of model priors used to obtain the posterior model probabilities.}
+    \item{logmargin.all}{Vector of all (log) fractional integrated likelihoods.}
+    \item{base.model}{Maximum (log) fractional integrated likelihood among all candidate models.  All fractional Bayes factors are obtained with respect to this model.}
+    \item{BF.vec}{Vector of fractional Bayes factors for all candidate models.}
 }
 \description{
 Performs simultaneous selection of covariates and spatial model structure for areal data.
 }
 \references{
-\insertRef{Porter_2023}{ref.ICAR}
+\insertRef{Porter_2024}{ref.ICAR}
 }
 \author{
 Erica M. Porter, Christopher T. Franck, and Marco A.R. Ferreira

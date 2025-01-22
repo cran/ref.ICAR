@@ -43,14 +43,14 @@ ref.MCMC(
 }
 \value{
 A list containing MCMC chains and parameter summaries.
-\item{MCMCchain}{Matrix of MCMC chains.}
-\item{tauc.MCMC}{MCMC chains for the spatial dependence parameter.}
-\item{sigma2.MCMC}{MCMC chains for the variance of the unstructured random effects.}
-\item{phi.MCMC}{MCMC chains for the spatial random effects.}
-\item{beta.MCMC}{MCMC chains for the fixed effect regression coefficients.}
-\item{accept.sigma2}{Final acceptance number for variance of the unstructured random effects.}
-\item{accept.tauc}{Final acceptance number for spatial dependence parameter.}
-\item{accept.phi}{Final acceptance number for spatial random effects.}
+    \item{MCMCchain}{Matrix of MCMC chains.}
+    \item{tauc.MCMC}{MCMC chains for the spatial dependence parameter.}
+    \item{sigma2.MCMC}{MCMC chains for the variance of the unstructured random effects.}
+    \item{phi.MCMC}{MCMC chains for the spatial random effects.}
+    \item{beta.MCMC}{MCMC chains for the fixed effect regression coefficients.}
+    \item{accept.sigma2}{Final acceptance number for variance of the unstructured random effects.}
+    \item{accept.tauc}{Final acceptance number for spatial dependence parameter.}
+    \item{accept.phi}{Final acceptance number for spatial random effects.}
 }
 \description{
 Implements the Metropolis-within-Gibbs sampling algorithm proposed by Ferreira et al. (2021),

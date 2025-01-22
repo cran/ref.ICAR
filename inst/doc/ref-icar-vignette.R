@@ -2,10 +2,22 @@
 knitr::opts_chunk$set(echo = TRUE)
 #knitr::opts_chunk$set(fig.width=8, fig.height=6)
 library(rcrossref)
+Sys.setenv("PROJ_NETWORK"="ON")
+library(sf)
+library(utils)
+library(ggplot2)
+library(classInt)
+library(RColorBrewer)
+library(dplyr)
+library(ref.ICAR)
+library(mvtnorm)
+library(coda)
+library(pracma)
+library(stats)
+library(spdep)
+library(spData)
 
 ## ----echo = T, eval = T, warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=58)----
-
-library(sf)
 
 system.path <- system.file("extdata", "us.shape48.shp", package = "ref.ICAR", mustWork = TRUE)
 shp.layer <- gsub('.shp','',basename(system.path))
@@ -15,8 +27,6 @@ us.shape48 <- st_read(dsn = path.expand(shp.path), layer = shp.layer, quiet = TR
 
 ## ----echo = T, eval = T, warning=F, message=F, tidy=TRUE, tidy.opts=list(width.cutoff=58)----
 
-library(utils)
-
 data.path <- system.file("extdata", "states-sats48.txt", package = "ref.ICAR", mustWork = TRUE)
 
 sats48 <- read.table(data.path, header = T)
@@ -24,10 +34,6 @@ us.shape48$verbal <- sats48$VERBAL
 us.shape48$percent <- sats48$PERCENT
 
 ## ----echo = T, eval = T,fig.cap="Figure 1: Observed Verbal SAT Scores", warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=60),fig.align="center",fig.pos="h",fig.width=7,fig.height=5.5----
-
-library(ggplot2)
-library(classInt)
-library(dplyr)
 
 breaks_qt <- classIntervals(c(min(us.shape48$verbal) - .00001, us.shape48$verbal), n = 7, style = "quantile")
 
@@ -65,9 +71,6 @@ ggplot(us.shape48_sf) +
 
 ## ----echo = T, eval = T, warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=60)----
 
-library(ref.ICAR)
-library(spdep)
-
 shp.data <- shape.H(system.path)
 H <- shp.data$H
 
@@ -81,7 +84,6 @@ x <- sats48$PERCENT
 X <- cbind(1,x)
 
 ## ----echo = T, eval = T, warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=60)----
-library(mvtnorm)
 set.seed(3456)
 
 ref.SAT <- ref.MCMC(y=Y,X=X,H=H,iters=15000,burnin=5000,verbose=FALSE)
@@ -93,7 +95,6 @@ par(mfrow=c(2,2))
 ref.plot(ref.SAT$MCMCchain,X,burnin=5000,num.reg=length(Y))
 
 ## ----echo = T, eval = T, warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=60)----
-library(coda)
 
 summary.params <- ref.summary(MCMCchain=ref.SAT$MCMCchain,tauc.MCMC=ref.SAT$tauc.MCMC,sigma2.MCMC=ref.SAT$sigma2.MCMC,beta.MCMC=ref.SAT$beta.MCMC,phi.MCMC=ref.SAT$phi.MCMC,accept.phi=ref.SAT$accept.phi,accept.sigma2=ref.SAT$accept.sigma2,accept.tauc=ref.SAT$accept.tauc,iters=15000,burnin=5000)
 
@@ -136,35 +137,20 @@ names(sat.analysis)
 
 ## ----echo = T, eval = T, warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=58)----
 
-library(pracma)
-library(stats)
-library(spdep)
-
 # read in the data as contained in the spdep package
-columbus <- st_read(system.file("shapes/columbus.shp", package="spData")[1], quiet=TRUE)
+columbus <- st_read(system.file("shapes/columbus.gpkg", package="spData")[1], quiet=TRUE)
 
 ## ----echo = T, eval = T,fig.cap="Figure 4: Plot of observed crime rates for Columbus, OH neighborhoods", warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=60),fig.align="center",fig.pos="h",fig.width=7,fig.height=5.5----
 
-breaks_qt <- classIntervals(c(min(columbus$CRIME) - .00001, columbus$CRIME), n = 7, style = "quantile")
+breaks <- c(0.178, 16.5, 22.5, 30.5, 38.3, 44, 54.8, 68.9)
 
-columbus_sf <- mutate(columbus, crime_cat = cut(CRIME, breaks_qt$brks))
-ggplot(columbus_sf) + 
-    geom_sf(aes(fill=crime_cat)) +
-    scale_fill_brewer(palette = "OrRd") + 
-    labs(title="Plot of observed \n neighborhood crime rates") +
-    theme_bw() +
-    theme(axis.ticks.x=element_blank(), 
-          axis.text.x=element_blank(),
-          axis.ticks.y=element_blank(), 
-          axis.text.y=element_blank(),
-          axis.title=element_text(size=25,face="bold"),
-          plot.title = element_text(face="bold", size=25, hjust=0.5)) +
-    guides(fill=guide_legend("Neighborhood \n crime rate"))
+plot(columbus["CRIME"], breaks=breaks, pal=brewer.pal(7, 'OrRd'), 
+     main="Observed neighborhood crime rates", cex.main=2)
 
 ## ----echo = T, eval = T, warning=F,message=F, tidy=TRUE, tidy.opts=list(width.cutoff=58)----
 
 # create neighborhood matrix
-columbus.listw <- poly2nb(columbus)
+columbus.listw <- poly2nb(columbus) 
 summary(columbus.listw)
 W <- nb2mat(columbus.listw, style="B")
 Dmat <- diag(apply(W,1,sum))
